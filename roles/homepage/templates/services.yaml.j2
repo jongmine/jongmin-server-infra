@@ -1,0 +1,61 @@
+- System Monitor:
+    - CPU Usage:
+        href: "https://glances.{{ domain_name }}"
+        widget:
+          type: glances
+          url: "http://glances:61208"
+          version: 4
+          metric: cpu
+          chart: true
+    - Memory Usage:
+        href: "https://glances.{{ domain_name }}"
+        widget:
+          type: glances
+          url: "http://glances:61208"
+          version: 4
+          metric: memory
+          chart: true
+    - Disk I/O (NVMe):
+        href: "https://glances.{{ domain_name }}"
+        widget:
+          type: glances
+          url: "http://glances:61208"
+          version: 4
+          metric: disk:nvme0n1
+          chart: true
+    - Network (eth0):
+        href: "https://glances.{{ domain_name }}"
+        widget:
+          type: glances
+          url: "http://glances:61208"
+          version: 4
+          metric: network:eth0
+          chart: true
+    - Top Processes:
+        href: "https://glances.{{ domain_name }}"
+        widget:
+          type: glances
+          url: "http://glances:61208"
+          version: 4
+          metric: process
+    - Docker Stats:
+        href: "https://glances.{{ domain_name }}"
+        widget:
+          type: glances
+          url: "http://glances:61208"
+          version: 4
+          metric: containers
+
+- Infrastructure:
+    - Traefik:
+        icon: traefik
+        href: "https://traefik.{{ domain_name }}"
+        description: "Gateway & Proxy"
+        widget:
+          type: traefik
+          url: "http://traefik:8080"
+          
+    - Portainer:
+        icon: portainer
+        href: "https://portainer.{{ domain_name }}"
+        description: "Docker Management"

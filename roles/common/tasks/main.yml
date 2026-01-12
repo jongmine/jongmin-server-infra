@@ -1,0 +1,32 @@
+---
+- name: Update apt cache and upgrade all packages
+  apt:
+    update_cache: yes
+    upgrade: dist
+    cache_valid_time: 3600
+
+- name: Install essential packages
+  apt:
+    name:
+      - vim
+      - git
+      - curl
+      - wget
+      - htop
+      - net-tools
+      - unzip
+      - ca-certificates
+      - software-properties-common
+      - python3-pip
+      - python3-docker
+    state: present
+
+- name: Set timezone to Asia/Seoul
+  timezone:
+    name: Asia/Seoul
+
+- name: Ensure correct permissions for home directory
+  file:
+    path: "/home/{{ ansible_user }}"
+    mode: "0755"
+    state: directory

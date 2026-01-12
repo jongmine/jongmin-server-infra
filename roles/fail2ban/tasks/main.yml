@@ -1,0 +1,56 @@
+---
+- name: Install UFW and Fail2Ban
+  apt:
+    name:
+      - ufw
+      - fail2ban
+    state: present
+
+- name: Configure UFW - Allow SSH
+  ufw:
+    rule: allow
+    port: '22'
+    proto: tcp
+
+- name: Configure UFW - Allow HTTP
+  ufw:
+    rule: allow
+    port: '80'
+    proto: tcp
+
+- name: Configure UFW - Allow HTTPS
+  ufw:
+    rule: allow
+    port: '443'
+    proto: tcp
+
+- name: Configure UFW - Allow Traefik Dashboard (8080)
+  ufw:
+    rule: allow
+    port: '8080'
+    proto: tcp
+
+- name: Enable UFW and set default deny
+  ufw:
+    state: enabled
+    policy: deny
+    direction: incoming
+
+- name: Ensure Fail2Ban is running
+  service:
+    name: fail2ban
+    state: started
+    enabled: yes
+
+- name: Copy custom Fail2Ban jail configuration
+  copy:
+    content: |
+      [sshd]
+      enabled = true
+      port = 22
+      filter = sshd
+      logpath = /var/log/auth.log
+      maxretry = {{ fail2ban_maxretry }}
+      bantime = {{ fail2ban_bantime }}
+    dest: /etc/fail2ban/jail.local
+  notify: Restart Fail2Ban

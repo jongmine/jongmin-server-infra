@@ -1,0 +1,92 @@
+---
+- name: Add Docker GPG key
+  shell: |
+    install -m 0755 -d /etc/apt/keyrings
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+    chmod a+r /etc/apt/keyrings/docker.asc
+  args:
+    creates: /etc/apt/keyrings/docker.asc
+
+- name: Add Docker repository
+  shell: |
+    echo \
+    "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+    $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+    tee /etc/apt/sources.list.d/docker.list > /dev/null
+  args:
+    creates: /etc/apt/sources.list.d/docker.list
+
+- name: Update apt cache
+  apt:
+    update_cache: yes
+
+- name: Install Docker packages
+  apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-compose-plugin
+    state: present
+
+- name: Add user to docker group
+  user:
+    name: "{{ ansible_user }}"
+    groups: docker
+    append: yes
+
+- name: Enable and start Docker service
+  service:
+    name: docker
+    state: started
+    enabled: yes
+
+- name: Create {{ docker_network_name }} network
+  docker_network:
+    name: "{{ docker_network_name }}"
+    driver: bridge
+
+- name: Run Glances container
+  docker_container:
+    name: glances
+    image: nicolargo/glances:latest
+    restart_policy: always
+    pid_mode: host
+    networks:
+      - name: "{{ docker_network_name }}"
+    ports:
+      - "61208:61208"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "/etc/os-release:/etc/os-release:ro"
+    env:
+      GLANCES_OPT: "-w" # Web server mode
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.glances.rule: "Host(`glances.{{ domain_name }}`)"
+      traefik.http.routers.glances.entrypoints: "websecure"
+      traefik.http.routers.glances.tls.certresolver: "cloudflare"
+      traefik.http.routers.glances.middlewares: "auth-jongmin@file"
+      traefik.http.services.glances.loadbalancer.server.port: "61208"
+
+- name: Create Portainer data volume
+  docker_volume:
+    name: portainer_data
+
+- name: Run Portainer container
+  docker_container:
+    name: portainer
+    image: portainer/portainer-ce:latest
+    restart_policy: always
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+      - "portainer_data:/data"
+    networks:
+      - name: "{{ docker_network_name }}"
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.portainer.rule: "Host(`portainer.{{ domain_name }}`)"
+      traefik.http.routers.portainer.entrypoints: "websecure"
+      traefik.http.routers.portainer.tls.certresolver: "cloudflare"
+      traefik.http.services.portainer.loadbalancer.server.port: "9000"
