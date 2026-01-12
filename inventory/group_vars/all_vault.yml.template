@@ -1,0 +1,19 @@
+---
+# Cloudflare API Configuration
+# Edit Zone DNS 권한이 있는 토큰 필요
+cloudflare_api_token: "CLOUDFLARE_API_TOKEN"
+
+# Let's Encrypt Configuration
+letsencrypt_email: "email@example.com"
+
+# Homepage Basic Auth 설정 (htpasswd 해시값)
+homepage_basic_auth_user: "admin"
+homepage_basic_auth_password: "YOUR_HTPASSWD_HASH"
+
+# Developer Access
+developer_basic_auth_user: "dev"
+developer_basic_auth_password: "YOUR_DEV_HTPASSWD_HASH"
+
+# IP AllowList (임시로 모든 IP 허용)
+developer_ips:
+  - "0.0.0.0/0"

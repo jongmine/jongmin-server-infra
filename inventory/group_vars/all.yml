@@ -1,0 +1,15 @@
+---
+# Common Variables
+
+# Domain Configuration (Cloudflare)
+domain_name: "jongmine.cloud"
+
+# Docker Network
+docker_network_name: "jongmin-net"
+
+# Traefik Version
+traefik_version: "latest"
+
+# Fail2Ban Settings
+fail2ban_bantime: 3600
+fail2ban_maxretry: 5

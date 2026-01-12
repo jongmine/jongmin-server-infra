@@ -1,0 +1,12 @@
+---
+- name: Run Cloudflare DDNS container
+  docker_container:
+    name: cloudflare-ddns
+    image: favonia/cloudflare-ddns:latest
+    restart_policy: always
+    network_mode: host # 외부 IP 감지를 위해 호스트 네트워크 사용
+    env:
+      CF_API_TOKEN: "{{ cloudflare_api_token }}"
+      DOMAINS: "{{ domain_name }}"
+      PROXIED: "true"
+      IP6_PROVIDER: "none"

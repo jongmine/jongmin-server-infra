@@ -1,0 +1,20 @@
+http:
+  middlewares:
+    # Basic Auth for Dashboard and other apps
+    auth-jongmin:
+      basicAuth:
+        users:
+          - "{{ homepage_basic_auth_user }}:{{ homepage_basic_auth_password }}"
+          # Developer Access (Optional)
+          - "{{ developer_basic_auth_user | default('dev') }}:{{ developer_basic_auth_password | default(homepage_basic_auth_password) }}"
+
+    # Security Headers
+    security-headers:
+      headers:
+        browserXssFilter: true
+        contentTypeNosniff: true
+        forceSTSHeader: true
+        stsIncludeSubdomains: true
+        stsPreload: true
+        stsSeconds: 31536000
+        customFrameOptionsValue: SAMEORIGIN
