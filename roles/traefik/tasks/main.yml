@@ -1,0 +1,80 @@
+---
+- name: Create Traefik configuration directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  with_items:
+    - /etc/traefik
+    - /etc/traefik/acme
+
+- name: Create empty acme.json with correct permissions
+  file:
+    path: /etc/traefik/acme/acme.json
+    state: touch
+    owner: root
+    group: root
+    mode: '0600'
+    modification_time: preserve
+    access_time: preserve
+
+- name: Copy Traefik dynamic configuration
+  template:
+    src: config.yml.j2
+    dest: /etc/traefik/config.yml
+    mode: '0644'
+  notify: Restart Traefik
+
+- name: Run Traefik container
+  docker_container:
+    name: traefik
+    image: "traefik:{{ traefik_version }}"
+    restart_policy: always
+    recreate: yes
+    networks:
+      - name: "{{ docker_network_name }}"
+    ports:
+      - "80:80"
+      - "443:443"
+    # Port 8080 is not exposed to host for security, but reachable via Docker network
+    expose:
+      - "8080"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "/etc/traefik/config.yml:/etc/traefik/config.yml"
+      - "/etc/traefik/acme:/etc/traefik/acme"
+    env:
+      CF_DNS_API_TOKEN: "{{ cloudflare_api_token }}"
+    command:
+      # Docker Provider
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.network={{ docker_network_name }}"
+      - "--providers.docker.endpoint=unix:///var/run/docker.sock"
+      # File Provider (Dynamic Config)
+      - "--providers.file.filename=/etc/traefik/config.yml"
+      - "--providers.file.watch=true"
+      # EntryPoints
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      # Enforce Basic Auth on all HTTPS requests (Security First!)
+      - "--entrypoints.websecure.http.middlewares=auth-jongmin@file"
+      # API & Dashboard
+      - "--api.dashboard=true"
+      - "--api.insecure=true"
+      # Certificate Resolver (Cloudflare)
+      - "--certificatesresolvers.cloudflare.acme.email={{ letsencrypt_email }}"
+      - "--certificatesresolvers.cloudflare.acme.storage=/etc/traefik/acme/acme.json"
+      - "--certificatesresolvers.cloudflare.acme.dnschallenge=true"
+      - "--certificatesresolvers.cloudflare.acme.dnschallenge.provider=cloudflare"
+      - "--certificatesresolvers.cloudflare.acme.dnschallenge.resolvers=1.1.1.1:53,8.8.8.8:53"
+    labels:
+      traefik.enable: "true"
+      # Dashboard Router (Internal)
+      traefik.http.routers.traefik.rule: "Host(`traefik.{{ domain_name }}`)"
+      traefik.http.routers.traefik.service: "api@internal"
+      traefik.http.routers.traefik.entrypoints: "websecure"
+      traefik.http.routers.traefik.middlewares: "auth-jongmin@file"
+      traefik.http.routers.traefik.tls.certresolver: "cloudflare"
