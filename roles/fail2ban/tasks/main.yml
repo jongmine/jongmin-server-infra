@@ -30,6 +30,12 @@
     port: '8080'
     proto: tcp
 
+- name: Configure UFW - Allow Tailscale interface
+  ufw:
+    rule: allow
+    direction: in
+    interface: tailscale0
+
 - name: Enable UFW and set default deny
   ufw:
     state: enabled
