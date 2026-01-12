@@ -1,0 +1,13 @@
+---
+- hosts: homeserver
+  become: true
+  vars_files:
+    - ../inventory/group_vars/all.yml
+    - ../inventory/group_vars/all_vault.yml
+  roles:
+    - common
+    - docker
+    - traefik
+    - ddns
+    - fail2ban
+    - homepage

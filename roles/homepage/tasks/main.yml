@@ -1,0 +1,54 @@
+---
+- name: Create Homepage configuration directory
+  file:
+    path: /etc/homepage
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Deploy Homepage configuration files
+  template:
+    src: "{{ item }}.yaml.j2"
+    dest: "/etc/homepage/{{ item }}.yaml"
+    mode: "0644"
+  with_items:
+    - settings
+    - widgets
+    - docker
+    - services
+    - bookmarks
+  notify: Restart Homepage
+
+- name: Run Homepage container
+  docker_container:
+    name: homepage
+    image: ghcr.io/gethomepage/homepage:latest
+    restart_policy: always
+    recreate: yes
+    networks:
+      - name: "{{ docker_network_name }}"
+    ports:
+      - "3000:3000"
+    volumes:
+      - "/etc/homepage:/app/config"
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    env:
+      HOMEPAGE_ALLOWED_HOSTS: "{{ domain_name }},{{ ansible_host }}"
+    labels:
+      traefik.enable: "true"
+      # HTTPS Router: Only handle root domain and secure IP access
+      traefik.http.routers.homepage.rule: "Host(`{{ domain_name }}`) || Host(`{{ ansible_host }}`)"
+      traefik.http.routers.homepage.entrypoints: "websecure"
+      traefik.http.routers.homepage.tls.certresolver: "cloudflare"
+      traefik.http.routers.homepage.priority: "1"
+      traefik.http.routers.homepage.middlewares: "auth-jongmin@file"
+
+      # HTTP Router: Only handle root domain and local IP access on port 80
+      traefik.http.routers.homepage-http.rule: "Host(`{{ domain_name }}`) || Host(`{{ ansible_host }}`)"
+      traefik.http.routers.homepage-http.entrypoints: "web"
+      traefik.http.routers.homepage-http.priority: "1"
+      traefik.http.routers.homepage-http.middlewares: "auth-jongmin@file"
+
+      # Service Port
+      traefik.http.services.homepage.loadbalancer.server.port: "3000"

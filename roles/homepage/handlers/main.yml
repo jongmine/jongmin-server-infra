@@ -1,0 +1,7 @@
+---
+- name: Restart Homepage
+  docker_container:
+    name: homepage
+    image: ghcr.io/gethomepage/homepage:latest
+    state: started
+    restart: yes
