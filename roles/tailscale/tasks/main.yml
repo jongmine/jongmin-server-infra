@@ -1,0 +1,28 @@
+---
+- name: Download Tailscale installation script
+  get_url:
+    url: https://tailscale.com/install.sh
+    dest: /tmp/tailscale_install.sh
+    mode: '0755'
+
+- name: Run Tailscale installation script
+  command: /tmp/tailscale_install.sh
+  args:
+    creates: /usr/bin/tailscale
+
+- name: Start Tailscale service
+  service:
+    name: tailscaled
+    state: started
+    enabled: yes
+
+- name: Check if Tailscale is authenticated
+  command: tailscale status
+  register: tailscale_status
+  failed_when: false
+  changed_when: false
+
+- name: Authenticate Tailscale with auth-key
+  command: "tailscale up --authkey={{ tailscale_auth_key }}"
+  when: tailscale_status.rc != 0
+  no_log: true # 보안을 위해 로그에 키 노출 방지

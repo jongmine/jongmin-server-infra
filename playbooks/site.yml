@@ -11,3 +11,4 @@
     - ddns
     - fail2ban
     - homepage
+    - tailscale

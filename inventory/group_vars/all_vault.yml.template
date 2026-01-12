@@ -8,11 +8,21 @@ letsencrypt_email: "email@example.com"
 
 # Homepage Basic Auth 설정 (htpasswd 해시값)
 homepage_basic_auth_user: "admin"
-homepage_basic_auth_password: "YOUR_HTPASSWD_HASH"
+homepage_basic_auth_password: "YOUR_HTPASSWD"
 
-# Developer Access
+# Developer Access (for Portainer, etc.)
 developer_basic_auth_user: "dev"
-developer_basic_auth_password: "YOUR_DEV_HTPASSWD_HASH"
+developer_basic_auth_password: "YOUR_DEV_HTPASSWD"
+
+# Tailscale Configuration
+tailscale_auth_key: "tskey-auth-..."
+tailscale_api_key: "tskey-api-..." # for Homepage widget
+tailscale_device_id: "m123...CNTRL" # for Homepage widget
+
+# Portainer Configuration (for Homepage widget)
+portainer_api_key: "ptr_..."
+portainer_env_id: 1
+
 
 # IP AllowList (임시로 모든 IP 허용)
 developer_ips:
