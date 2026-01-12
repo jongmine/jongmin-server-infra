@@ -54,8 +54,19 @@
         widget:
           type: traefik
           url: "http://traefik:8080"
-          
     - Portainer:
         icon: portainer
         href: "https://portainer.{{ domain_name }}"
-        description: "Docker Management"
+        widget:
+          type: portainer
+          url: "http://portainer:9000"
+          env: 3
+          key: "{{ portainer_api_key }}"
+    - Tailscale:
+        icon: tailscale
+        href: "https://login.tailscale.com/admin/machines"
+        description: "Zero Trust VPN"
+        widget:
+          type: tailscale
+          deviceid: "{{ tailscale_device_id }}"
+          key: "{{ tailscale_api_key }}"
