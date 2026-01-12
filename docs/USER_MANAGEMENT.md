@@ -34,25 +34,36 @@ Traefik 인증을 통과한 사용자가 컨테이너를 관리할 수 있도록
 
 ---
 
-## 🔴 3단계: Linux 계정 (파일 창고 열어주기)
+## 🔴 3단계: 터미널 접속 (SSH)
 
-소스 코드를 직접 수정하거나 업로드(SFTP)해야 하는 경우 리눅스 계정을 발급합니다.
+개발자에게 터미널 접근 권한을 주는 방법은 두 가지가 있습니다.
 
-### 계정 생성 가이드 (서버 터미널)
+### 방법 A: Tailscale SSH (권장 ⭐)
+SSH 키를 생성하거나 서버에 등록할 필요 없이, Tailscale 로그인만으로 접속하는 현대적인 방식입니다.
 
-```bash
-# 1. 계정 생성 (docker 그룹에 넣지 마세요!)
-sudo adduser project_a
+1.  **관리자 설정**: ACL(`ssh` 섹션)에 해당 유저를 추가합니다. (예: `users: ["jongmin-infra"]`)
+2.  **개발자 접속**: 터미널에서 아래 명령어로 접속합니다.
+    ```bash
+tailscale ssh jongmin-infra@jongmin-server
+    ```
+3.  **장점**: 키 관리가 필요 없고, 관리자가 대시보드에서 즉시 권한을 뺏을 수 있습니다.
 
-# 2. SSH 키 등록
-sudo mkdir -p /home/project_a/.ssh
-sudo vi /home/project_a/.ssh/authorized_keys # 개발자 Public Key 추가
-sudo chown -R project_a:project_a /home/project_a/.ssh
-sudo chmod 700 /home/project_a/.ssh
-sudo chmod 600 /home/project_a/.ssh/authorized_keys
-```
+### 방법 B: 일반 SSH (전통적 방식)
+기존의 SSH 키(`authorized_keys`) 등록 방식입니다.
 
-### ⚠️ 보안 주의사항
+1.  **계정 생성**: `sudo adduser project_a` (docker 그룹 제외!)
+2.  **키 등록**: 개발자의 `id_rsa.pub` 내용을 `/home/project_a/.ssh/authorized_keys`에 추가.
 
-- **Docker 그룹**: 절대 일반 프로젝트 계정을 `docker` 그룹에 넣지 마세요. 시스템 전체를 장악할 수 있는 Root 권한을 주는 것과 같습니다.
-- **파일 권한**: 개발자는 자기 홈 디렉토리 안에서만 작업하도록 권장합니다.
+---
+
+## 🛡️ 보안 모범 사례 (Security Best Practices)
+
+7명의 개발자와 안전하게 협업하기 위해 아래 설정을 반드시 유지하세요.
+
+1.  **Root 로그인 차단**: 
+    - Tailscale ACL의 `ssh` 섹션에서 `"root"`를 제거하세요.
+    - 서버 `/etc/ssh/sshd_config`에서 `PermitRootLogin no`를 설정하세요.
+2.  **최소 권한의 원칙**: 
+    - 개발자 그룹(`group:sallang`)에게는 꼭 필요한 포트(`80`, `443`, `22`)만 개방하세요.
+3.  **로그 모니터링**: 
+    - 누가 언제 접속했는지는 Tailscale 대시보드의 **Logs** 메뉴에서 실시간으로 확인 가능합니다.

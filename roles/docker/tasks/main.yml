@@ -89,4 +89,6 @@
       traefik.http.routers.portainer.rule: "Host(`portainer.{{ domain_name }}`)"
       traefik.http.routers.portainer.entrypoints: "websecure"
       traefik.http.routers.portainer.tls.certresolver: "cloudflare"
+      # Override global auth: Empty middleware list
+      traefik.http.routers.portainer.middlewares: ""
       traefik.http.services.portainer.loadbalancer.server.port: "9000"
