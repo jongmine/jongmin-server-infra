@@ -143,6 +143,7 @@ htpasswd -nbB user password
 - [**Homepage 가이드**](docs/HOMEPAGE_GUIDE.md): 대시보드 꾸미기, 위젯 설정법.
 - [**Docker 운영 가이드**](docs/ANSIBLE_DOCKER_GUIDE.md): docker-compose 사용자를 위한 가이드.
 - [**VPN 접속 가이드**](docs/VPN_ACCESS_GUIDE.md): Tailscale Zero Trust VPN 설정 및 외부 접속 방법.
+- [**Tailscale 보안 정책**](docs/TAILSCALE_ACL_GUIDE.md): ACL 및 SSH 접근 제어 설정 가이드.
 - [**Portainer 가이드**](docs/PORTAINER_GUIDE.md): Portainer 도입 및 운영 전략.
 - [**사용자 & 권한 관리**](docs/USER_MANAGEMENT.md): 계정 추가 및 보안 설정 가이드.
 - [**개발자 협업 가이드**](docs/DEVELOPER_GUIDE.md): 외부 개발자를 위한 접속 및 배포 매뉴얼.
