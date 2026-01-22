@@ -98,6 +98,24 @@ ansible-playbook -i inventory/hosts.yml playbooks/site.yml
 - [**Docker 운영 전략**](docs/ANSIBLE_DOCKER_GUIDE.md): Ansible로 관리하는 것과 Portainer로 관리하는 것의 차이를 설명합니다.
 - [**Portainer 가이드**](docs/PORTAINER_GUIDE.md): GUI를 이용한 컨테이너 모니터링 및 임시 배포 방법.
 
+## 🛡️ 보안 정책 (Security Policy)
+
+이 서버는 Traefik 미들웨어를 사용하여 서비스별로 접근 제어를 수행합니다.
+
+### 전역 인증 (Basic Auth) 적용 대상
+다음의 핵심 인프라 서비스는 접속 시 전역 인증(`auth-jongmin`)이 필요합니다.
+- **Homepage**: `https://jongmine.cloud`
+- **Traefik Dashboard**: `https://traefik.jongmine.cloud`
+- **Portainer**: `https://portainer.jongmine.cloud`
+- **Glances**: `https://glances.jongmine.cloud`
+
+### 서비스별 설정 가이드
+- **공개 서비스 (API 등)**: 별도의 미들웨어 설정 없이 배포하면 외부에서 자유롭게 접근 가능합니다.
+- **비공개 서비스**: 보안이 필요한 경우 Docker Label에 `traefik.http.routers.[name].middlewares=auth-jongmin@file`을 추가해야 합니다.
+- 상세 설정 방법은 [**서비스 배포 가이드**](docs/CD_SCRIPT_GUIDE.md)를 참고하세요.
+
+## 🛠️ 시작하기 (Getting Started)
+
 ### 2. 인프라 상세 (For Admins)
 
 - [**Traefik 가이드**](docs/TRAEFIK_GUIDE.md): 게이트웨이 아키텍처, 전역 인증, 라우팅 상세 설정.
