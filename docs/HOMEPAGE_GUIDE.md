@@ -24,7 +24,7 @@ Homepage는 서버의 상태를 모니터링하고 서비스로 이동할 수 �
     icon: cpu
     widget:
       type: glances
-      url: "http://glances:61208" # 내부 통신용 URL
+      url: "http://glances:61208" # 내부 Docker Network 통신
       metric: cpu
       chart: true
 ```
@@ -49,5 +49,5 @@ layout:
 
 ## 🌐 Networking
 
-- **내부 접속**: `http://192.168.200.100` (80번 포트)
-- **외부 접속**: `https://jongmine.cloud` (443번 포트)
+- **접속 주소**: `https://jongmine.cloud`
+- **내부 포트**: 3000 (Traefik을 통해서만 접근 권장)

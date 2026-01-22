@@ -1,83 +1,72 @@
-# 🐳 Ansible for Core Infrastructure
+# 🐳 Docker Infrastructure Strategy
 
-이 문서는 **서버의 핵심 인프라(Core Infrastructure)** 를 관리하기 위한 가이드입니다.
-일반적인 서비스 배포나 개발용 컨테이너 관리는 **Portainer** 사용을 권장합니다. (참고: [Portainer 가이드](PORTAINER_GUIDE.md))
+이 문서는 **"무엇을 Ansible로 관리하고, 무엇을 따로 관리하는가?"** 에 대한 기준을 제시합니다.
 
----
+## 🏗️ Two-Track Strategy
 
-## 1. `docker-compose.yml`은 어디에 있나요?
+이 서버는 유연성과 안정성을 위해 두 가지 방식으로 컨테이너를 관리합니다.
 
-본 프로젝트에는 `docker-compose.yml` 파일이 존재하지 않습니다. 대신 **Ansible의 `docker_container` 모듈**이 설계도와 작업반장 역할을 동시에 수행합니다.
-
-### 코드 매핑 예시
-
-| 기능         | Docker Compose              | Ansible (`main.yml`)                 |
-| :----------- | :-------------------------- | :----------------------------------- |
-| **이미지**   | `image: traefik:latest`     | `image: "traefik:latest"`            |
-| **포트**     | `ports: ["80:80"]`          | `ports: ["80:80"]`                   |
-| **볼륨**     | `volumes: ["./data:/app"]`  | `volumes: ["/etc/app:/app"]`         |
-| **환경변수** | `environment: [KEY=VAL]`    | `env: { KEY: "VAL" }`                |
-| **라벨**     | `labels: [traefik.en=true]` | `labels: { traefik.enable: "true" }` |
-
-**원본 파일 위치**: `roles/<role_name>/tasks/main.yml`
+| 구분     | **Core Infrastructure**                     | **User Applications**              |
+| :------- | :------------------------------------------ | :--------------------------------- |
+| **대상** | Traefik, Homepage, Portainer, Glances, DDNS | 웹 서비스, DB, 개인 개발 프로젝트  |
+| **도구** | **Ansible** (`roles/`)                      | **CD Pipeline** / **Portainer**    |
+| **특징** | 변경 빈도 낮음, 시스템 전체에 영향          | 변경 빈도 높음, 서비스별 격리 필요 |
+| **정의** | `tasks/main.yml` (docker_container 모듈)    | `docker-compose.yml` (Stacks)      |
 
 ---
 
-## 2. 서버의 홈 디렉토리가 왜 비어있나요?
+## 1. Core Infrastructure (Ansible)
 
-`ssh`로 서버에 접속했을 때 파일이 보이지 않는 것은 **설정 파일이 시스템 표준 경로에 저장**되기 때문입니다.
+서버의 뼈대가 되는 서비스들은 Ansible Playbook으로 관리됩니다.
+이들은 `docker-compose.yml` 파일이 없으며, Ansible Task가 그 역할을 대신합니다.
 
-### 주요 파일 및 데이터 경로
+### 🔍 설정 확인 및 변경
 
-모든 설정과 데이터는 호스트의 `/etc/` 하위 디렉토리에 격리되어 관리됩니다.
+설정 파일은 호스트의 `/etc/` 하위 경로에 마운트되어 관리됩니다.
 
-- **Traefik 설정**: `/etc/traefik/` (동적 설정 및 SSL 인증서)
-- **Homepage 설정**: `/etc/homepage/` (YAML 설정 파일들)
-- **Docker 데이터**: `/var/lib/docker/` (Docker 엔진 관리)
+- **Traefik**: `/etc/traefik/`
+- **Homepage**: `/etc/homepage/`
 
-### 상태 확인 명령어
+### ➕ Core 서비스 추가 방법
 
-터미널에서 평소처럼 Docker 명령어를 사용하시면 됩니다.
+새로운 **인프라급** 서비스(예: Monitoring Tool, Backup Tool)를 추가할 때만 사용하세요.
 
-```bash
-# 실행 중인 서비스 확인
-docker ps
+1. `roles/` 에 새로운 Role 생성.
+2. `tasks/main.yml` 에 `docker_container` 모듈 작성.
+3. `playbooks/site.yml` 에 등록.
 
-# 실시간 로그 확인
-docker logs -f traefik
+---
 
-# 컨테이너 내부 진입
-docker exec -it homepage sh
+## 2. User Applications (Docker Compose)
+
+실제 우리가 사용하는 서비스나 개발 중인 앱은 **Ansible을 거치지 않고 배포**합니다.
+
+### 🚀 배포 방법
+
+1. **GitHub Actions (CD)**: [**CD 스크립트 가이드**](CD_SCRIPT_GUIDE.md)를 참고하여 자동 배포 파이프라인 구축.
+2. **Portainer (Manual)**: [**Portainer 가이드**](PORTAINER_GUIDE.md)를 참고하여 GUI에서 `Stack`(Compose)으로 배포.
+
+### 📝 Docker Compose 작성 원칙
+
+모든 애플리케이션은 다음 규칙을 따라야 합니다:
+
+1. **Gateway Network**: 웹 서버 컨테이너만 `jongmin-net`에 연결.
+2. **Internal Network**: DB 등은 `default` 내부망에만 배치.
+3. **Labels**: Traefik 라벨을 통해 도메인 및 HTTPS 연결.
+
+```mermaid
+flowchart LR
+    subgraph Ansible["Managed by Ansible"]
+        Traefik[Traefik Proxy]
+        Portainer[Portainer]
+        Homepage[Homepage]
+    end
+
+    subgraph UserApps["Managed by CD/Portainer"]
+        WebApp[Web Service]
+        DB[(Database)]
+    end
+
+    Traefik -->|jongmin-net| WebApp
+    WebApp <-->|internal-net| DB
 ```
-
----
-
-## 3. 새로운 서비스는 어떻게 추가하나요?
-
-1.  `roles/` 디렉토리에 새로운 폴더를 만듭니다 (예: `roles/plex`).
-2.  `tasks/main.yml`을 작성하고 `docker_container` 모듈로 설정을 정의합니다.
-
-### Traefik 연동 예시 (tasks/main.yml)
-
-```yaml
-- name: Run Plex container
-  docker_container:
-    name: plex
-    image: linuxserver/plex:latest
-    restart_policy: unless-stopped
-    networks:
-      - name: "{{ docker_network_name }}"
-    labels:
-      traefik.enable: "true"
-      # 도메인 연결 (https://plex.jongmine.cloud)
-      traefik.http.routers.plex.rule: "Host(`plex.{{ domain_name }}`)"
-      traefik.http.routers.plex.entrypoints: "websecure"
-      traefik.http.routers.plex.tls.certresolver: "cloudflare"
-      # 내부 포트 지정 (컨테이너가 32400을 쓰는 경우)
-      traefik.http.services.plex.loadbalancer.server.port: "32400"
-      # (선택) 추가 인증 없이 접근 (전역 인증을 덮어쓰고 싶을 때)
-      # traefik.http.routers.plex.middlewares: ""
-```
-
-3.  `playbooks/site.yml`의 `roles` 목록에 추가합니다.
-4.  `ansible-playbook -i inventory/hosts.yml playbooks/site.yml`을 실행합니다.

@@ -1,117 +1,46 @@
-# 🐳 Portainer 도입 및 운영 가이드
+# 🐳 Portainer 운영 가이드
 
-이 문서는 **애플리케이션 배포 및 개발 환경**을 위해 Portainer를 활용하는 방법을 설명합니다.
+이 서버는 Docker 컨테이너의 시각적 관리와 모니터링을 위해 **Portainer**를 운영하고 있습니다.
 
-## 1. 도입 목적 (Why Portainer?)
+## 1. 접속 정보
 
-- **Agility (민첩성)**: Ansible 코드를 수정하고 배포하는 과정 없이, 웹 GUI에서 즉시 컨테이너를 실행하고 로그를 확인할 수 있습니다.
-- **Sandbox (개발 환경)**: 개발자들에게 Docker 권한을 부여하여, 핵심 인프라에 영향을 주지 않고 자유롭게 서비스를 테스트할 수 있게 합니다.
-- **Collaboration (협업)**: 외부 개발자와 협업 시, SSH 접근 권한을 주는 대신 Portainer 계정을 발급하여 보안을 유지합니다.
+- **URL**: `https://portainer.jongmine.cloud`
+- **인증**:
+  1. **Traefik Auth**: 전역 Basic Auth (`auth-jongmin`) 통과 필요.
+  2. **Portainer Login**: 내부 사용자 DB 로그인.
 
----
+## 2. 배포 및 설정 (Infrastructure)
 
-## 2. 운영 가이드 (Operation)
+Portainer 컨테이너 자체는 **Ansible**을 통해 관리됩니다.
 
-### 2.1. 인프라 보호 (Infrastructure Protection)
+- **Role 위치**: `roles/docker/tasks/main.yml`
+- **데이터 저장**: `portainer_data` (Docker Volume)
+- **네트워크**: `jongmin-net` (Gateway Network)
+- **Traefik 설정**:
+  - `websecure` (HTTPS) 사용
+  - 내부 포트: `9000`
 
-Ansible로 배포된 컨테이너(Traefik, Homepage 등)는 Portainer에서 **`Limited`** 또는 **`External`** 로 표시됩니다.
+## 3. 사용 목적 및 규칙
 
-- **관리자**: 인프라 컨테이너를 실수로 삭제하거나 수정하지 않도록 주의합니다. (설정 변경은 반드시 Ansible로!)
-- **개발자**: 인프라 컨테이너에 대한 접근 권한을 제한(Hide)하거나 읽기 전용으로 설정하여 사고를 방지합니다.
+### ✅ 권장 용도 (DOs)
 
-### 2.2. 사용자 관리 (RBAC)
+- **모니터링**: 컨테이너 CPU/RAM 사용량, 로그 실시간 확인.
+- **디버깅**: 문제 발생 시 컨테이너 Console 접속 (`/bin/sh`).
+- **임시 배포**: 개발 중인 이미지를 빠르게 띄워 테스트할 때 (Stacks 기능 활용).
 
-- **Admin**: 서버 관리자 (Jongmin). 모든 권한 보유.
-- **Developer**: 개발자 그룹. 특정 Stack이나 Container에 대해서만 제어 권한 부여.
+### 🚫 주의 사항 (DON'Ts)
 
----
+- **인프라 변경 금지**: Ansible로 관리되는 핵심 컨테이너(`traefik`, `homepage` 등)의 설정을 Portainer에서 수동으로 변경하지 마세요. (Ansible 재실행 시 덮어씌워짐)
+- **네트워크 변경 금지**: `jongmin-net` 설정을 함부로 건드리지 마세요.
 
-## 3. 설치 방법 (Installation via Ansible)
+## 4. 트러블슈팅
 
-`roles/docker/tasks/main.yml` 파일에 아래 내용을 추가하고 `ansible-playbook`을 실행하면 됩니다.
+### 502 Bad Gateway
 
-### 2.1. 볼륨 생성 (데이터 보존용)
+- Portainer 컨테이너가 죽어있는지 확인하세요: `docker ps | grep portainer`
+- Traefik 로그를 확인하세요.
 
-가장 먼저 Portainer 데이터를 저장할 Docker 볼륨을 생성해야 합니다.
+### 로그인 불가
 
-```yaml
-- name: Create Portainer data volume
-  docker_volume:
-    name: portainer_data
-```
-
-### 2.2. 컨테이너 실행
-
-그 아래에 Portainer 컨테이너를 실행하는 태스크를 추가합니다.
-
-```yaml
-- name: Run Portainer container
-  docker_container:
-    name: portainer
-    image: portainer/portainer-ce:latest
-    restart_policy: always
-    volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock"
-      - "portainer_data:/data"
-    networks:
-      - name: "{{ docker_network_name }}"
-    labels:
-      traefik.enable: "true"
-      # 도메인 접속 설정 (portainer.jongmine.cloud)
-      traefik.http.routers.portainer.rule: "Host(`portainer.{{ domain_name }}`)"
-      traefik.http.routers.portainer.entrypoints: "websecure"
-      traefik.http.routers.portainer.tls.certresolver: "cloudflare"
-      # 내부 포트 (9000)
-      traefik.http.services.portainer.loadbalancer.server.port: "9000"
-      # (선택사항) 전역 인증이 걸려있지만, 이중 보안을 원하면 추가 가능
-      # traefik.http.routers.portainer.middlewares: "auth-jongmin@file"
-```
-
----
-
-## 3. 새로운 서비스 배포하기 (How to Deploy New Apps)
-
-Portainer를 통해 새로운 서비스(예: `whoami` 테스트 앱)를 배포할 때, Traefik과 연동하려면 **Labels**를 잘 써야 합니다.
-
-### 방법: Stacks (Docker Compose) 사용 - 권장
-
-Portainer 메뉴 중 **Stacks** -> **Add stack**을 눌러 아래와 같이 작성합니다.
-
-```yaml
-version: "3"
-services:
-  myapp:
-    image: traefik/whoami
-    container_name: my-test-app
-    networks:
-      - jongmin-net # 중요: Traefik과 같은 네트워크를 써야 함
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.myapp.rule=Host(`test.jongmine.cloud`)"
-      - "traefik.http.routers.myapp.entrypoints=websecure"
-      - "traefik.http.routers.myapp.tls.certresolver=cloudflare"
-
-networks:
-  jongmin-net:
-    external: true
-```
-
-이렇게 하면 `test.jongmine.cloud`로 접속 시 자동으로 HTTPS 인증서가 발급되고, Traefik 전역 설정에 의해 로그인 창(Basic Auth)까지 자동으로 뜹니다.
-
----
-
-## 4. Homepage 연동
-
-설치 후 `roles/homepage/templates/services.yaml.j2`의 `Infrastructure` 그룹에 추가하면 완벽합니다.
-
-```yaml
-- Portainer:
-    icon: portainer
-    href: "https://portainer.{{ domain_name }}"
-    description: "Container Management"
-    widget:
-      type: portainer
-      url: "http://portainer:9000"
-      env:
-        PORTAINER_API_KEY: "Portainer에서_발급받은_API_키"
-```
+- Traefik Basic Auth가 막히는 경우: 브라우저 캐시 삭제 또는 시크릿 모드 사용.
+- Portainer 계정 분실 시: `portainer_data` 볼륨 초기화가 필요할 수 있습니다 (주의).
