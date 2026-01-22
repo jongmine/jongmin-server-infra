@@ -19,6 +19,7 @@
       - software-properties-common
       - python3-pip
       - python3-docker
+      - acl
     state: present
 
 - name: Set timezone to Asia/Seoul
@@ -30,3 +31,61 @@
     path: "/home/{{ ansible_user }}"
     mode: "0755"
     state: directory
+
+# =======================================================================
+# 👥 Service Account Management Template
+#
+# 새로운 서비스를 위한 배포 계정이 필요할 때, 아래 블록을 복사하여 수정하세요.
+# 변경할 변수:
+#   - Group Name: sallang -> new-service-group
+#   - User Name: sallang-deploy -> new-service-deploy
+#   - Directory: /home/sallang-deploy -> /home/new-service-deploy
+# =======================================================================
+
+# [Service: Sallang]
+- name: Create 'sallang' group for developers
+  group:
+    name: sallang
+    state: present
+
+- name: Create 'sallang-deploy' service account
+  user:
+    name: sallang-deploy
+    groups: docker,sallang
+    append: yes
+    shell: /bin/bash
+    home: /home/sallang-deploy
+    create_home: yes
+
+- name: Create deployment root directory (/home/sallang-deploy/app)
+  file:
+    path: /home/sallang-deploy/app
+    state: directory
+    owner: sallang-deploy
+    group: sallang
+    mode: "0775"
+
+- name: Ensure specific service directory exists (sallang-backend)
+  file:
+    path: /home/sallang-deploy/app/sallang-backend
+    state: directory
+    owner: sallang-deploy
+    group: sallang
+    mode: "0775"
+
+- name: Configure sudoers for sallang-deploy (Allow docker without password)
+  copy:
+    dest: /etc/sudoers.d/sallang-deploy
+    content: |
+      # Allow sallang-deploy to run docker commands without password
+      sallang-deploy ALL=(ALL) NOPASSWD: /usr/bin/docker, /usr/bin/docker-compose
+    mode: "0440"
+    validate: "visudo -cf %s"
+
+- name: Create .ssh directory for sallang-deploy
+  file:
+    path: /home/sallang-deploy/.ssh
+    state: directory
+    owner: sallang-deploy
+    group: sallang-deploy
+    mode: "0700"
