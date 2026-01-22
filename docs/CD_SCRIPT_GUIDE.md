@@ -102,6 +102,10 @@ services:
       - "traefik.http.routers.myapp.tls.certresolver=cloudflare"
       # 서비스 포트 지정 (컨테이너 내부 포트)
       - "traefik.http.services.myapp.loadbalancer.server.port=3000"
+      
+      # [선택] 전역 Basic Auth 해제 (API 서비스의 경우 필수)
+      # 설정을 비워두면(empty) 엔트리포인트의 전역 인증을 무시합니다.
+      - "traefik.http.routers.myapp.middlewares="
     deploy:
       resources:
         limits:
