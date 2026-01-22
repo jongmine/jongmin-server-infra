@@ -102,7 +102,7 @@ services:
       - "traefik.http.routers.myapp.tls.certresolver=cloudflare"
       # 서비스 포트 지정 (컨테이너 내부 포트)
       - "traefik.http.services.myapp.loadbalancer.server.port=3000"
-      
+
       # [선택] 전역 Basic Auth 해제 (API 서비스의 경우 필수)
       # 설정을 비워두면(empty) 엔트리포인트의 전역 인증을 무시합니다.
       - "traefik.http.routers.myapp.middlewares="
@@ -139,7 +139,9 @@ networks:
 - [ ] **Network**: Web 컨테이너만 `jongmin-net`에 연결했는가?
 - [ ] **Isolation**: DB/Cache는 `jongmin-net`에서 제외했는가?
 - [ ] **Labels**: `traefik.enable=true` 및 `websecure` 엔트리포인트를 설정했는가?
-- [ ] **Auth**: 전역 인증(`auth-jongmin`)이 적용됨을 인지했는가? (별도 설정 없어도 자동 적용됨)
+- [ ] **Auth**: 서비스 성격에 따라 인증 여부를 결정했는가?
+  - **공개 API**: 미들웨어 설정 불필요 (또는 `middlewares=` 비워둠)
+  - **관리 도구**: `traefik.http.routers.[name].middlewares=auth-jongmin@file` 라벨 추가 필수
 - [ ] **DNS**: 사용하는 도메인(`[서비스명].jongmine.cloud`)이 서버 IP를 가리키고 있는가? (안 된다면 관리자에게 DNS 등록 요청)
 - [ ] **Resources**: `deploy.resources.limits`가 설정되어 있는가?
 

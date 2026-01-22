@@ -59,8 +59,6 @@
       # EntryPoints
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
-      # Enforce Basic Auth on all HTTPS requests (Security First!)
-      - "--entrypoints.websecure.http.middlewares=auth-jongmin@file"
       # API & Dashboard
       - "--api.dashboard=true"
       - "--api.insecure=true"
