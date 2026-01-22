@@ -44,3 +44,29 @@ Portainer 컨테이너 자체는 **Ansible**을 통해 관리됩니다.
 
 - Traefik Basic Auth가 막히는 경우: 브라우저 캐시 삭제 또는 시크릿 모드 사용.
 - Portainer 계정 분실 시: `portainer_data` 볼륨 초기화가 필요할 수 있습니다 (주의).
+
+## 5. CI/CD 및 Stack 권한 관리
+
+### 문제점: "Limited" Control 상태
+
+외부(SSH 터미널, CI/CD 스크립트)에서 `docker compose up` 명령어로 직접 실행한 Stack은 Portainer에서 **"Limited"** 상태로 표시됩니다.
+
+- **증상**: Portainer UI에서 `docker-compose.yml` 내용을 수정하거나, 환경변수를 변경할 수 없습니다 (Edit 버튼 비활성화).
+- **원인**: Portainer가 해당 스택의 "Source of Truth"를 가지고 있지 않기 때문입니다.
+- **부작용**: 스택을 재배포할 때마다 Portainer에서 설정한 **Access Control(권한)**이 초기화될 수 있습니다.
+
+### 권장 해결책: GitOps & Webhook (추후 도입 권장)
+
+CI/CD 파이프라인이 서버에 직접 접속해 배포하는 대신, Portainer가 **Git 리포지토리**를 바라보게 하고 **Webhook**으로 업데이트 신호만 주는 방식을 권장합니다.
+
+1. **Portainer에서 Stack 생성**:
+   - **Build method**: `Repository` 선택 (GitHub 리포지토리 URL 입력).
+   - **Automatic updates** 활성화 -> **Webhook** 스위치 ON -> 생성된 Webhook URL 복사.
+2. **CI/CD 파이프라인 수정**:
+   - `docker compose up` 단계(SSH 접속)를 삭제.
+   - `curl -X POST [Webhook_URL]` 실행으로 대체.
+
+이 방식을 사용하면:
+
+- 스택이 **"Total Control"** 상태가 되어 UI에서 수정 가능해집니다.
+- 서비스 계정 등에 부여한 **Access Control(권한)이 영구적으로 유지**됩니다.
