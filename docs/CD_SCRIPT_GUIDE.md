@@ -24,7 +24,7 @@
 
 ---
 
-## 2. 🏗️ 네트워크 아키텍처ㄴ
+## 2. 🏗️ 네트워크 아키텍처
 
 이 서버는 **Traefik**을 메인 게이트웨이로 사용하는 **Proxy Tier** 전략을 따릅니다.
 
@@ -203,3 +203,14 @@ jobs:
 
 1.  **계정 확인**: `sallang-deploy` 계정으로 접속했는지 확인하세요.
 2.  **디렉토리 권한**: `~/app` 하위 디렉토리를 생성할 수 없는 경우, 관리자에게 `/home/sallang-deploy/app` 권한(`775`) 확인을 요청하세요.
+
+---
+
+## 6. 향후 개선 사항 (Roadmap)
+
+### Portainer 연동 개선 (Webhook 방식)
+
+현재의 SSH 기반 배포(`docker-compose up`)는 Portainer에서 해당 스택을 **"Limited"** 상태로 만듭니다. 이로 인해 Portainer UI에서 설정을 변경하거나 권한을 지속적으로 관리하는 데 제약이 있습니다.
+
+- **권장 방향**: 추후 CI/CD 파이프라인을 **Portainer Webhook** 방식으로 전환하여, Portainer가 스택의 제어권을 완전히(Total Control) 가지도록 개선할 예정입니다.
+- 자세한 내용은 [Portainer 가이드](PORTAINER_GUIDE.md#5-cicd-및-stack-권한-관리-중요)를 참고하세요.
