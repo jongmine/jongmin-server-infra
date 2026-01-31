@@ -32,8 +32,19 @@
 새로운 **인프라급** 서비스(예: Monitoring Tool, Backup Tool)를 추가할 때만 사용하세요.
 
 1. `roles/` 에 새로운 Role 생성.
-2. `tasks/main.yml` 에 `docker_container` 모듈 작성.
-3. `playbooks/site.yml` 에 등록.
+2. `defaults/main.yml` 에 기본값 변수 정의 (권장).
+3. `tasks/main.yml` 에 `docker_container` 모듈 작성.
+4. `playbooks/site.yml` 에 등록.
+
+**권장 구조**:
+
+```bash
+roles/new-service/
+├── defaults/main.yml    # 기본값 변수
+├── tasks/main.yml       # 컨테이너 정의
+├── templates/           # 설정 파일 (필요시)
+└── handlers/main.yml    # 재시작 핸들러 (필요시)
+```
 
 ---
 
