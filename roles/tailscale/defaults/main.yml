@@ -1,0 +1,8 @@
+---
+# Tailscale Role Default Variables
+
+# Tailscale Install Script URL
+tailscale_install_url: "https://tailscale.com/install.sh"
+
+# Required Variables (must be defined in group_vars)
+# - tailscale_auth_key

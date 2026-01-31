@@ -1,0 +1,17 @@
+---
+# Docker Role Default Variables
+
+# Docker Network Name
+docker_network_name: "jongmin-net"
+
+# Glances Settings
+glances_image: "nicolargo/glances:latest"
+glances_port: 61208
+glances_polling_interval: 5 # seconds
+
+# Portainer Settings
+portainer_image: "portainer/portainer-ce:latest"
+portainer_port: 9000
+
+# Required Variables (must be defined in group_vars)
+# - domain_name
