@@ -1,0 +1,23 @@
+---
+# Common Role Default Variables
+
+# System Timezone
+system_timezone: "Asia/Seoul"
+
+# Essential Packages
+essential_packages:
+  - vim
+  - git
+  - curl
+  - wget
+  - htop
+  - net-tools
+  - unzip
+  - ca-certificates
+  - software-properties-common
+  - python3-pip
+  - python3-docker
+  - acl
+
+# APT Cache Valid Time (seconds)
+apt_cache_valid_time: 3600

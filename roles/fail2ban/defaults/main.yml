@@ -1,0 +1,11 @@
+---
+# Fail2Ban Role Default Variables
+
+# Ban Settings
+fail2ban_bantime: 3600 # 1 hour (seconds)
+fail2ban_maxretry: 5 # Maximum retry attempts
+fail2ban_findtime: 600 # 10 minutes (seconds)
+
+# Notification
+fail2ban_destemail: "root@localhost"
+fail2ban_sender: "fail2ban@localhost"

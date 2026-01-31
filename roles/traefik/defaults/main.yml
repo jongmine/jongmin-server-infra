@@ -1,0 +1,17 @@
+---
+# Traefik Role Default Variables
+
+# Traefik Version
+traefik_version: "latest"
+
+# Traefik Log Level (DEBUG, INFO, WARN, ERROR)
+traefik_log_level: "INFO"
+
+# Certificate Resolver Name
+traefik_cert_resolver: "cloudflare"
+
+# Required Variables (must be defined in group_vars)
+# - domain_name
+# - docker_network_name
+# - cloudflare_api_token
+# - letsencrypt_email

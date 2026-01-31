@@ -1,0 +1,45 @@
+---
+# Common Variables
+
+# Domain Configuration
+domain_name: "jongmine.cloud"
+
+# Docker Network
+docker_network_name: "jongmin-net"
+
+# Traefik Version
+traefik_version: "latest"
+
+# Fail2Ban Settings
+fail2ban_bantime: 3600
+fail2ban_maxretry: 5
+
+# =======================================================================
+# Sensitive Variables (Reference from Vault)
+# =======================================================================
+
+# Cloudflare API Configuration
+cloudflare_api_token: "{{ vault_cloudflare_api_token }}"
+
+# Let's Encrypt Configuration
+letsencrypt_email: "{{ vault_letsencrypt_email }}"
+
+# Homepage Basic Auth
+homepage_basic_auth_user: "{{ vault_homepage_basic_auth_user }}"
+homepage_basic_auth_password: "{{ vault_homepage_basic_auth_password }}"
+
+# Developer Access (for Portainer, etc.)
+developer_basic_auth_user: "{{ vault_developer_basic_auth_user }}"
+developer_basic_auth_password: "{{ vault_developer_basic_auth_password }}"
+
+# Tailscale Configuration
+tailscale_auth_key: "{{ vault_tailscale_auth_key }}"
+tailscale_api_key: "{{ vault_tailscale_api_key }}"
+tailscale_device_id: "{{ vault_tailscale_device_id }}"
+
+# Portainer Configuration (for Homepage widget)
+portainer_api_key: "{{ vault_portainer_api_key }}"
+portainer_env_id: "{{ vault_portainer_env_id }}"
+
+# IP AllowList
+developer_ips: "{{ vault_developer_ips }}"

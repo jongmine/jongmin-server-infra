@@ -1,0 +1,12 @@
+---
+# Homepage Role Default Variables
+
+# Homepage Docker Image
+homepage_image: "ghcr.io/gethomepage/homepage:latest"
+homepage_port: 3000
+
+# Required Variables (must be defined in group_vars)
+# - domain_name
+# - docker_network_name
+# - homepage_basic_auth_user
+# - homepage_basic_auth_password

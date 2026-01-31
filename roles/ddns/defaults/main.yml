@@ -1,0 +1,14 @@
+---
+# Cloudflare DDNS Role Default Variables
+
+# Docker Image
+ddns_image: "favonia/cloudflare-ddns:latest"
+
+# DDNS Settings
+ddns_proxied: "true" # Cloudflare Proxy 사용 여부
+ddns_ip6_provider: "none" # IPv6 비활성화
+
+
+# Required Variables (must be defined in group_vars)
+# - cloudflare_api_token
+# - domain_name
