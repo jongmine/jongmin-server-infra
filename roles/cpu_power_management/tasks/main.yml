@@ -1,0 +1,36 @@
+---
+# CPU Power Management Role
+
+- name: Ensure GRUB configuration is correct
+  lineinfile:
+    path: "{{ grub_config_file }}"
+    regexp: "^GRUB_CMDLINE_LINUX_DEFAULT="
+    line: 'GRUB_CMDLINE_LINUX_DEFAULT="{{ grub_cmdline_linux_default }}"'
+    backup: yes
+  notify: update grub
+
+- name: Deploy CPU boost control systemd service
+  template:
+    src: disable-cpu-boost.service.j2
+    dest: /etc/systemd/system/{{ cpu_boost_service_name }}.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify: restart cpu boost service
+
+- name: Enable and start CPU boost control service
+  systemd:
+    name: "{{ cpu_boost_service_name }}.service"
+    enabled: yes
+    state: started
+    daemon_reload: yes
+
+- name: Verify CPU boost status
+  command: cat {{ cpu_boost_sysfs_path }}
+  register: cpu_boost_status
+  changed_when: false
+  failed_when: false
+
+- name: Display CPU boost status
+  debug:
+    msg: "CPU Boost is {{ 'ENABLED (1)' if cpu_boost_status.stdout == '1' else 'DISABLED (0)' }} - Target: {{ 'ENABLED' if cpu_boost_enabled else 'DISABLED' }}"
