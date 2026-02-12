@@ -4,6 +4,7 @@
     url: https://tailscale.com/install.sh
     dest: /tmp/tailscale_install.sh
     mode: '0755'
+    force: no
 
 - name: Run Tailscale installation script
   command: /tmp/tailscale_install.sh

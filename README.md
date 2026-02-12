@@ -59,6 +59,11 @@ graph TD
 │   ├── common/
 │   │   ├── defaults/         # 기본값 변수
 │   │   └── tasks/            # 기본 설정
+│   ├── cpu_power_management/
+│   │   ├── defaults/         # 기본값 변수
+│   │   ├── tasks/            # CPU 부스트 비활성화
+│   │   ├── templates/        # Systemd 서비스 템플릿
+│   │   └── handlers/         # 재시작 핸들러
 │   ├── docker/
 │   │   ├── defaults/         # 기본값 변수
 │   │   └── tasks/            # Docker Engine & Portainer
@@ -160,6 +165,7 @@ ansible-playbook -i inventory/hosts.yml playbooks/site.yml --check --ask-vault-p
 ### 1. 배포 및 운영 (For Developers & Agents)
 
 - [**서비스 배포 가이드 (CD Guide)**](docs/CD_SCRIPT_GUIDE.md): 새로운 서비스를 배포할 때 가장 먼저 읽어야 할 문서. 네트워크 구조와 CD 스크립트 템플릿을 제공합니다.
+- [**서버 유지보수 가이드 (Maintenance)**](docs/MAINTENANCE_GUIDE.md): 서버 종료, 램 증설 등 하드웨어 작업 시 안전한 셧다운 절차.
 - [**Docker 운영 전략**](docs/ANSIBLE_DOCKER_GUIDE.md): Ansible로 관리하는 것과 Portainer로 관리하는 것의 차이를 설명합니다.
 - [**Portainer 가이드**](docs/PORTAINER_GUIDE.md): GUI를 이용한 컨테이너 모니터링 및 임시 배포 방법.
 
@@ -181,6 +187,29 @@ ansible-playbook -i inventory/hosts.yml playbooks/site.yml --check --ask-vault-p
 - **공개 서비스 (API 등)**: 별도의 미들웨어 설정 없이 배포하면 외부에서 자유롭게 접근 가능합니다.
 - **비공개 서비스**: 보안이 필요한 경우 Docker Label에 `traefik.http.routers.[name].middlewares=auth-jongmin@file`을 추가해야 합니다.
 - 상세 설정 방법은 [**서비스 배포 가이드**](docs/CD_SCRIPT_GUIDE.md)를 참고하세요.
+
+## 🔧 하드웨어 최적화
+
+### CPU 전원 관리 (팬 소음 감소)
+
+AMD Ryzen 미니 PC 환경에서 팬 소음을 줄이기 위해 CPU 부스트를 비활성화합니다.
+
+- **문제**: CPU 부스트로 인한 급격한 온도 변화 (37°C ↔ 46°C)로 팬이 5초 주기로 폭주
+- **해결**: `cpu_power_management` role로 부스트 비활성화, 온도를 40°C대로 안정화
+- **효과**: 팬 소음 제거, 온도 안정화 (74°C → 40°C), 서버 성능 유지
+
+```bash
+# CPU 부스트 상태 확인
+cat /sys/devices/system/cpu/cpufreq/boost  # 0 = 비활성화
+
+# 서비스 상태 확인
+sudo systemctl status disable-cpu-boost.service
+
+# 온도 모니터링
+sensors
+```
+
+**비활성화 해제**: `inventory/group_vars/all/vars`에서 `cpu_boost_enabled: true`로 변경
 
 ## 🛠️ 시작하기 (Getting Started)
 

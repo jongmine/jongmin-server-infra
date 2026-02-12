@@ -32,7 +32,7 @@
     name: traefik
     image: "traefik:{{ traefik_version }}"
     restart_policy: always
-    recreate: yes
+    recreate: no
     networks:
       - name: "{{ docker_network_name }}"
     ports:
