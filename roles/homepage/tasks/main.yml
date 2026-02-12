@@ -25,7 +25,7 @@
     name: homepage
     image: ghcr.io/gethomepage/homepage:latest
     restart_policy: always
-    recreate: yes
+    recreate: no
     networks:
       - name: "{{ docker_network_name }}"
     ports:
