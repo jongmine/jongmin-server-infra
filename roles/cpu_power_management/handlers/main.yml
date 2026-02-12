@@ -1,0 +1,14 @@
+---
+- name: update grub
+  command: update-grub
+  notify: reboot required
+
+- name: restart cpu boost service
+  systemd:
+    name: "{{ cpu_boost_service_name }}.service"
+    state: restarted
+    daemon_reload: yes
+
+- name: reboot required
+  debug:
+    msg: "GRUB configuration changed. Reboot required to apply kernel parameters."

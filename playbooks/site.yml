@@ -6,6 +6,7 @@
     - ../inventory/group_vars/all_vault.yml
   roles:
     - common
+    - cpu_power_management
     - docker
     - traefik
     - ddns
