@@ -43,3 +43,30 @@ portainer_env_id: "{{ vault_portainer_env_id }}"
 
 # IP AllowList
 developer_ips: "{{ vault_developer_ips }}"
+
+# =======================================================================
+# Monitoring Stack Configuration
+# =======================================================================
+
+# Network
+monitoring_network_name: "monitoring-net"
+
+# Component Versions
+prometheus_version: "latest"
+loki_version: "latest"
+tempo_version: "latest"
+grafana_version: "latest"
+alloy_version: "latest"
+alertmanager_version: "latest"
+
+# Data Retention
+prometheus_retention: "15d"
+loki_retention: "744h"
+tempo_retention: "168h"
+
+# Grafana Configuration (vault reference)
+grafana_admin_user: "{{ vault_grafana_admin_user }}"
+grafana_admin_password: "{{ vault_grafana_admin_password }}"
+
+# Alertmanager Configuration (Slack notifications disabled for now)
+# alertmanager_slack_webhook: "{{ vault_alertmanager_slack_webhook }}"
