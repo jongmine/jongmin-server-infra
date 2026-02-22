@@ -1,0 +1,6 @@
+---
+- name: Create monitoring network (internal=true)
+  docker_network:
+    name: "{{ monitoring_network_name }}"
+    internal: true
+    state: present
