@@ -1,0 +1,66 @@
+---
+# Alertmanager Configuration
+# Note: Slack notifications are disabled. Alerts are only visible in Alertmanager UI and Grafana.
+global:
+  resolve_timeout: 5m
+
+route:
+  receiver: 'null'
+  group_by: ['alertname', 'team']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 12h
+
+receivers:
+  - name: 'null'
+    # No notification receivers configured
+    # Alerts will be visible in:
+    # - Alertmanager UI: http://<server-ip>:9093 (via Tailscale VPN)
+    # - Grafana Alerting page
+
+inhibit_rules:
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'instance']
+
+{#
+To enable Slack notifications later:
+1. Add to inventory/group_vars/all/vault:
+   vault_alertmanager_slack_webhook: "https://hooks.slack.com/services/..."
+
+2. Add to inventory/group_vars/all/vars:
+   alertmanager_slack_webhook: "{{ vault_alertmanager_slack_webhook }}"
+
+3. Replace the configuration above with:
+
+route:
+  receiver: 'default-receiver'
+  group_by: ['alertname', 'team']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 12h
+  routes:
+    - match:
+        severity: critical
+        team: infra
+      receiver: 'infra-critical'
+    - match:
+        team: sallang
+      receiver: 'sallang-alerts'
+
+receivers:
+  - name: 'default-receiver'
+    slack_configs:
+      - api_url: '{{ alertmanager_slack_webhook }}'
+        channel: '#infra-warnings'
+  - name: 'infra-critical'
+    slack_configs:
+      - api_url: '{{ alertmanager_slack_webhook }}'
+        channel: '#infra-critical'
+  - name: 'sallang-alerts'
+    slack_configs:
+      - api_url: '{{ alertmanager_slack_webhook }}'
+        channel: '#sallang-alerts'
+#}
