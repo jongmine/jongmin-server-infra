@@ -1,0 +1,70 @@
+---
+- name: Deploy Prometheus configuration
+  template:
+    src: prometheus.yml.j2
+    dest: /etc/monitoring/prometheus/prometheus.yml
+    mode: '0644'
+  notify: Restart Prometheus
+
+- name: Deploy Prometheus alert rules - Infrastructure
+  template:
+    src: alert_rules_infra.yml.j2
+    dest: /etc/monitoring/prometheus/rules/alert_rules_infra.yml
+    mode: '0644'
+  notify: Restart Prometheus
+
+- name: Deploy Prometheus alert rules - Sallang
+  template:
+    src: alert_rules_sallang.yml.j2
+    dest: /etc/monitoring/prometheus/rules/alert_rules_sallang.yml
+    mode: '0644'
+  notify: Restart Prometheus
+
+- name: Run Prometheus container
+  docker_container:
+    name: prometheus
+    image: "prom/prometheus:{{ prometheus_version }}"
+    restart_policy: always
+    recreate: no
+    user: "nobody"
+    groups:
+      - "988"  # docker group for socket access
+    networks:
+      - name: "{{ monitoring_network_name }}"
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time={{ prometheus_retention }}"
+      - "--web.console.libraries=/usr/share/prometheus/console_libraries"
+      - "--web.console.templates=/usr/share/prometheus/consoles"
+      - "--web.enable-lifecycle"
+    volumes:
+      - "/etc/monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro"
+      - "/etc/monitoring/prometheus/rules:/etc/prometheus/rules:ro"
+      - "/etc/monitoring/prometheus/data:/prometheus"
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    memory: "{{ prometheus_memory_limit }}"
+    cpus: "{{ prometheus_cpu_limit }}"
+
+- name: Deploy Alertmanager configuration
+  template:
+    src: alertmanager.yml.j2
+    dest: /etc/monitoring/alertmanager/config.yml
+    mode: '0644'
+  notify: Restart Alertmanager
+
+- name: Run Alertmanager container
+  docker_container:
+    name: alertmanager
+    image: "prom/alertmanager:{{ alertmanager_version }}"
+    restart_policy: always
+    recreate: no
+    networks:
+      - name: "{{ monitoring_network_name }}"
+    command:
+      - "--config.file=/etc/alertmanager/config.yml"
+      - "--storage.path=/alertmanager"
+    volumes:
+      - "/etc/monitoring/alertmanager/config.yml:/etc/alertmanager/config.yml:ro"
+    memory: "{{ alertmanager_memory_limit }}"
+    cpus: "{{ alertmanager_cpu_limit }}"

@@ -1,0 +1,32 @@
+---
+# Monitoring Stack Restart Handlers
+
+- name: Restart Prometheus
+  docker_container:
+    name: prometheus
+    restart: true
+
+- name: Restart Loki
+  docker_container:
+    name: loki
+    restart: true
+
+- name: Restart Tempo
+  docker_container:
+    name: tempo
+    restart: true
+
+- name: Restart Grafana
+  docker_container:
+    name: grafana
+    restart: true
+
+- name: Restart Alertmanager
+  docker_container:
+    name: alertmanager
+    restart: true
+
+- name: Restart Alloy
+  docker_container:
+    name: alloy
+    restart: true
