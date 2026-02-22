@@ -1,0 +1,23 @@
+---
+- name: Deploy Loki configuration
+  template:
+    src: loki.yml.j2
+    dest: /etc/monitoring/loki/config.yml
+    mode: '0644'
+  notify: Restart Loki
+
+- name: Run Loki container
+  docker_container:
+    name: loki
+    image: "grafana/loki:{{ loki_version }}"
+    restart_policy: always
+    recreate: no
+    networks:
+      - name: "{{ monitoring_network_name }}"
+    command:
+      - "-config.file=/etc/loki/config.yml"
+    volumes:
+      - "/etc/monitoring/loki/config.yml:/etc/loki/config.yml:ro"
+      - "/etc/monitoring/loki/data:/loki"
+    memory: "{{ loki_memory_limit }}"
+    cpus: "{{ loki_cpu_limit }}"
