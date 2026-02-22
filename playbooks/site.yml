@@ -13,3 +13,4 @@
     - fail2ban
     - homepage
     - tailscale
+    - monitoring
