@@ -35,6 +35,7 @@
     recreate: no
     networks:
       - name: "{{ docker_network_name }}"
+      - name: "monitoring-net"
     ports:
       - "80:80"
       - "443:443"
@@ -62,6 +63,10 @@
       # API & Dashboard
       - "--api.dashboard=true"
       - "--api.insecure=true"
+      # Prometheus Metrics
+      - "--metrics.prometheus=true"
+      - "--metrics.prometheus.addEntryPointsLabels=true"
+      - "--metrics.prometheus.addServicesLabels=true"
       # Certificate Resolver (Cloudflare)
       - "--certificatesresolvers.cloudflare.acme.email={{ letsencrypt_email }}"
       - "--certificatesresolvers.cloudflare.acme.storage=/etc/traefik/acme/acme.json"
@@ -70,6 +75,10 @@
       - "--certificatesresolvers.cloudflare.acme.dnschallenge.resolvers=1.1.1.1:53,8.8.8.8:53"
     labels:
       traefik.enable: "true"
+      # Prometheus Monitoring
+      monitoring.scrape: "true"
+      monitoring.port: "8080"
+      monitoring.path: "/metrics"
       # Dashboard Router (Internal)
       traefik.http.routers.traefik.rule: "Host(`traefik.{{ domain_name }}`)"
       traefik.http.routers.traefik.service: "api@internal"
