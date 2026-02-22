@@ -1,0 +1,97 @@
+// Grafana Alloy Configuration (River DSL)
+
+// ============================================================================
+// Docker Discovery
+// ============================================================================
+discovery.docker "containers" {
+  host = "unix:///var/run/docker.sock"
+}
+
+// ============================================================================
+// Docker Logs Collection → Loki
+// ============================================================================
+discovery.relabel "docker_logs" {
+  targets = discovery.docker.containers.targets
+
+  // Extract container name
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    target_label  = "container_name"
+    regex         = "/(.*)"
+  }
+
+  // Extract compose project (for tenant ID mapping)
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_project"]
+    target_label  = "compose_project"
+  }
+
+  // Extract compose service
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label  = "compose_service"
+  }
+
+  // Extract team label
+  rule {
+    source_labels = ["__meta_docker_container_label_team"]
+    target_label  = "team"
+  }
+}
+
+loki.source.docker "containers" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.relabel.docker_logs.output
+  forward_to = [loki.process.tenant_mapping.receiver]
+}
+
+// Tenant ID mapping based on compose_project
+loki.process "tenant_mapping" {
+  forward_to = [loki.write.loki_endpoint.receiver]
+
+  stage.tenant {
+    source = "compose_project"
+  }
+
+  // If no compose_project, use "infra" as default tenant
+  stage.static_labels {
+    values = {
+      __tenant_id__ = "infra",
+    }
+  }
+}
+
+loki.write "loki_endpoint" {
+  endpoint {
+    url = "http://loki:{{ loki_port }}/loki/api/v1/push"
+
+    // Multi-tenancy header will be set by tenant stage
+    tenant_id = ""
+  }
+}
+
+// ============================================================================
+// OTLP Receiver → Tempo (Traces)
+// ============================================================================
+otelcol.receiver.otlp "default" {
+  grpc {
+    endpoint = "0.0.0.0:{{ alloy_otlp_port }}"
+  }
+
+  http {
+    endpoint = "0.0.0.0:{{ alloy_http_port }}"
+  }
+
+  output {
+    traces  = [otelcol.exporter.otlp.tempo.input]
+  }
+}
+
+otelcol.exporter.otlp "tempo" {
+  client {
+    endpoint = "tempo:{{ tempo_port }}"
+    tls {
+      insecure = true
+    }
+  }
+}
