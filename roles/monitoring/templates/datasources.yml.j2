@@ -1,0 +1,75 @@
+---
+# Grafana Datasources Provisioning
+apiVersion: 1
+
+datasources:
+  # ============================================================================
+  # Admin Datasources (Full Access)
+  # ============================================================================
+
+  - name: Prometheus
+    uid: prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:{{ prometheus_port }}
+    isDefault: true
+    editable: false
+    jsonData:
+      timeInterval: 15s
+      queryTimeout: 60s
+      httpMethod: POST
+
+  - name: Loki
+    uid: loki
+    type: loki
+    access: proxy
+    url: http://loki:{{ loki_port }}
+    editable: false
+    jsonData:
+      maxLines: 1000
+      httpHeaderName1: 'X-Scope-OrgID'
+    secureJsonData:
+      httpHeaderValue1: 'infra'
+
+  - name: Tempo
+    uid: tempo
+    type: tempo
+    access: proxy
+    url: http://tempo:{{ tempo_port }}
+    editable: true
+    jsonData:
+      search:
+        hide: false
+      nodeGraph:
+        enabled: true
+
+  # ============================================================================
+  # Sallang Team Datasources (Restricted Access)
+  # ============================================================================
+  # NOTE: Sallang 전용 datasource는 secureJsonData를 사용하므로
+  # 파일 기반 provisioning이 불가능합니다.
+  # Grafana UI에서 수동으로 생성하거나, Grafana API를 통해 생성해야 합니다.
+  #
+  # - name: Prometheus (Sallang)
+  #   uid: prometheus-sallang
+  #   type: prometheus
+  #   access: proxy
+  #   url: http://prometheus:{{ prometheus_port }}
+  #   editable: false
+  #   jsonData:
+  #     timeInterval: 15s
+  #     queryTimeout: 60s
+  #     httpMethod: POST
+  #     customQueryParameters: 'team=sallang'
+  #
+  # - name: Loki (Sallang)
+  #   uid: loki-sallang
+  #   type: loki
+  #   access: proxy
+  #   url: http://loki:{{ loki_port }}
+  #   editable: false
+  #   jsonData:
+  #     maxLines: 1000
+  #     httpHeaderName1: 'X-Scope-OrgID'
+  #   secureJsonData:
+  #     httpHeaderValue1: 'sallang'
