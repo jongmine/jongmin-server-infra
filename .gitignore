@@ -3,3 +3,4 @@ inventory/group_vars/all_vault.yml
 .DS_Store
 *.retry
 .vscode/
+.omc/
