@@ -49,10 +49,22 @@ loki.source.docker "containers" {
 loki.process "tenant_mapping" {
   forward_to = [loki.write.loki_endpoint.receiver]
 
+  stage.json {
+    expressions = {
+      application = "application",
+    }
+  }
+
+  stage.labels {
+    values = {
+      application = "application",
+    }
+  }
+
   stage.tenant {
     source = "compose_project"
   }
-
+...
   // If no compose_project, use "infra" as default tenant
   stage.static_labels {
     values = {

@@ -1,30 +1,30 @@
 # 프로젝트 개발 문맥 (Context)
 
 ## 📌 현재 상태 요약 (2026-03-02)
-- **코드 무결성:** 현재까지 Ansible Role, Playbook, Config Template 등 **핵심 인프라 코드는 일절 수정되지 않았습니다.**
-- **추가된 파일:** 작업 관리를 위한 `checklist.md`, `context.md`가 생성되었으며, 이들은 `.gitignore`를 통해 Git 추적에서 제외되도록 설정되었습니다.
-- **분석 결과:** `roles/monitoring` 내에 Grafana, Loki, Tempo, Prometheus, Alloy가 개별적으로는 완벽히 구축되어 있으나, 장애 발생 시 데이터 간의 상호 연결(Correlation)이 끊겨 있는 상태입니다.
+- **코드 무결성:** 핵심 인프라 코드와 백엔드 애플리케이션에 Prometheus, Loki, Tempo의 **3방향 연동(Correlations)** 설정이 완료되었습니다.
+- **구현 완료:**
+    - **Back-end Tracing:** `sallang-backend`에 Micrometer Tracing 및 OTLP 설정 완료. (Exemplars 활성)
+    - **Log Labeling:** Alloy에서 로그 본문의 `application` 필드를 라벨로 자동 추출하여 트레이스와 연동.
+    - **Sallang APM Dashboard:** 500 에러 분석 전용 대시보드(`sallang-apm-500`) 구축 및 프로비저닝 완료.
+- **분석 역량:** 에러율 그래프에서 Exemplar(점) 클릭 시 해당 트레이스로 즉시 이동하며, 트레이스 스판에서 관련 로그를 실시간으로 확인할 수 있는 APM 환경이 구축됨.
 
-## 🔍 모니터링 스택 심층 분석
-### 1. 트레이싱 (Tempo & Alloy)
-- **구조:** 백엔드(Spring Boot) -> Alloy(gRPC/HTTP) -> Tempo(Storage)
-- **현황:** 데이터는 정상 수집 중이나, Grafana 대시보드에서 트레이스 단독으로만 확인 가능합니다.
-- **목표:** 트레이스의 특정 구간(Span)에서 해당 시점의 로그로 즉시 이동하는 `Trace-to-Logs` 기능을 활성화해야 합니다.
+## 🔍 모니터링 스택 심층 분석 (LGTM + Exemplars)
+### 1. 트레이싱 & 로그 (Tempo ↔ Loki)
+- **상태:** `alloy.river.j2`의 `stage.json`을 통해 로그의 `application` 라벨과 트레이스의 `service.name`이 일치하도록 정합성 확보.
+- **기능:** 로그의 `trace_id`를 통한 트레이스 점프 및 트레이스의 `service.name` 태그를 이용한 로그 필터링이 정확하게 작동함.
 
-### 2. 로그 (Loki)
-- **구조:** Docker stdout -> Alloy -> Loki
-- **현황:** 로그 내에 `traceId`와 `spanId`가 JSON 필드로 포함되어 있으나, 단순 텍스트로 취급되어 클릭이 불가능합니다.
-- **목표:** `Derived Fields` 설정을 통해 로그의 `traceId`를 클릭하면 템포 트레이스 화면으로 자동 이동하는 '원클릭 디버깅' 환경을 구축해야 합니다.
+### 2. 메트릭 & Exemplars (Prometheus → Tempo)
+- **상태:** `application-dev.yml`에서 `percentiles-histogram`을 활성화하여 Prometheus가 Exemplar 데이터를 수집하도록 설정.
+- **기능:** 에러율 급증 시점의 개별 요청 트레이스를 시각적으로 파악 가능.
 
-## 🎯 500 에러 디버깅 시나리오 (목표)
-사용자가 500 에러를 발견했을 때의 이상적인 워크플로우:
-1. **Loki:** "500 Error" 로그 발견 -> 로그 옆의 **[View Trace]** 링크 클릭.
-2. **Tempo:** 해당 요청의 전체 Waterfall 차트 자동 로드 -> 빨간색으로 표시된 에러 Span 확인.
-3. **Link:** 에러 Span 클릭 후 **[Logs for this span]** 클릭 -> 에러 발생 당시의 구체적인 예외 메시지 및 파라미터 즉시 확인.
+## 🎯 500 에러 디버깅 시나리오 (실행 가능)
+1. **Prometheus:** `Sallang APM` 대시보드에서 에러율 그래프의 **Exemplar(점)** 클릭 → **Tempo** 트레이스로 이동.
+2. **Loki:** 에러 로그 옆의 **[View Trace]** 링크 클릭 → **Tempo** 트레이스로 이동.
+3. **Tempo:** 에러 발생 Span 확인 → **[Logs for this span]** 클릭 → 로그 상세 확인.
 
-## 🛠 향후 핵심 수정 대상 (예정)
-- `roles/monitoring/templates/datasources.yml.j2`: Loki와 Tempo 데이터 소스에 연동 메타데이터 추가.
-- `playbooks/site.yml`: 현재 메인 플레이북에서 누락된 `monitoring` 역할의 실행 순서 정의.
+## 🛠 다음 단계 (Next Steps)
+- **원클릭 디버깅 워크플로우 테스트:** 실제 500 에러 발생 시나리오를 통한 전 구간(Metric-Trace-Log) 연동 테스트.
+- **Alerting Strategy:** 500 에러 발생 시 Slack 알림과 함께 해당 시점의 대시보드 링크 제공 기능 고도화.
 
 ---
 *이 문서는 LLM이 현재 프로젝트의 정밀한 상태와 사용자의 고도화 의도를 파악하기 위한 가이드로 활용됩니다.*
