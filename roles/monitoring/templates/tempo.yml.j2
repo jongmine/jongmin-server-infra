@@ -12,9 +12,6 @@ distributor:
           endpoint: 0.0.0.0:4317
         http:
           endpoint: 0.0.0.0:4318
-  ring:
-    kvstore:
-      store: inmemory
 
 ingester:
   lifecycler:
@@ -24,20 +21,7 @@ ingester:
         store: inmemory
       replication_factor: 1
     final_sleep: 0s
-  partition_ring:
-    kvstore:
-      store: inmemory
   max_block_duration: 5m
-  lifecycler:
-    ring:
-      replication_factor: 1
-      kvstore:
-        store: inmemory
-    final_sleep: 0s
-
-querier:
-  frontend_worker:
-    frontend_address: 127.0.0.1:9095
 
 storage:
   trace:
@@ -46,14 +30,15 @@ storage:
       path: /tmp/tempo/blocks
     wal:
       path: /tmp/tempo/wal
-    pool:
-      max_workers: 100
-      queue_depth: 10000
+
+querier:
+  frontend_worker:
+    frontend_address: ""
 
 metrics_generator:
-  registry:
-    external_labels:
-      source: tempo
+  ring:
+    kvstore:
+      store: inmemory
   storage:
     path: /tmp/tempo/generator/wal
 
