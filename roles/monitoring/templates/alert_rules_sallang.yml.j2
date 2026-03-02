@@ -44,7 +44,14 @@ groups:
           description: {% raw %}"Sallang matching queue length is above 1000 (current: {{ $value }})"{% endraw %}
 
       - alert: SallangHighMemoryUsage
-        expr: (container_memory_usage_bytes{name=~".*sallang.*"} / container_spec_memory_limit_bytes{name=~".*sallang.*"}) * 100 > 85
+        expr: |
+          (
+            container_memory_usage_bytes{name=~".*sallang.*"}
+            /
+            container_spec_memory_limit_bytes{name=~".*sallang.*"}
+          ) * 100 > 85
+          and
+          container_spec_memory_limit_bytes{name=~".*sallang.*"} > 0
         for: 5m
         labels:
           severity: warning
