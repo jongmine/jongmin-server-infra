@@ -23,4 +23,14 @@
     - docker-container-host.json
     - loki-dashboard.json
     - traefik-v3.json
+
+- name: Deploy Sallang dashboards
+  copy:
+    src: "dashboards/sallang/{{ item }}"
+    dest: "/etc/monitoring/grafana/data/dashboards/sallang/{{ item }}"
+    owner: '472'
+    group: '472'
+    mode: '0644'
+  with_items:
+    - apm-dashboard.json
   notify: Restart Grafana
