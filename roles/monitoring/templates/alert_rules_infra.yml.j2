@@ -54,17 +54,26 @@ groups:
           description: {% raw %}"Node Exporter on {{ $labels.instance }} has been down for more than 1 minute"{% endraw %}
 
       - alert: ContainerDown
-        expr: count by(container_name) (time() - container_last_seen{name!~"POD|k8s_.*"} > 60) > 0
+        expr: count by(name) (time() - container_last_seen{name!~"POD|k8s_.*", name!=""} > 60) > 0
         for: 1m
         labels:
           severity: warning
           team: infra
         annotations:
           summary: "Container is down"
-          description: {% raw %}"Container {{ $labels.container_name }} has been down for more than 1 minute"{% endraw %}
+          description: {% raw %}"Container {{ $labels.name }} has been down for more than 1 minute"{% endraw %}
 
       - alert: HighContainerMemoryUsage
-        expr: (container_memory_usage_bytes{name!~"POD|k8s_.*"} / container_spec_memory_limit_bytes{name!~"POD|k8s_.*"}) * 100 > 90
+        # name!="" : Docker 컨테이너만 (systemd cgroup 제외)
+        # > 0 필터: 메모리 제한이 설정된 컨테이너만 (무제한 컨테이너 제외)
+        expr: |
+          (
+            container_memory_usage_bytes{name!="", name!~"POD|k8s_.*"}
+            /
+            container_spec_memory_limit_bytes{name!="", name!~"POD|k8s_.*"}
+          ) * 100 > 90
+          and
+          container_spec_memory_limit_bytes{name!="", name!~"POD|k8s_.*"} > 0
         for: 5m
         labels:
           severity: warning
