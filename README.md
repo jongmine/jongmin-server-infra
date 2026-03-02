@@ -188,28 +188,15 @@ ansible-playbook -i inventory/hosts.yml playbooks/site.yml --check --ask-vault-p
 - **비공개 서비스**: 보안이 필요한 경우 Docker Label에 `traefik.http.routers.[name].middlewares=auth-jongmin@file`을 추가해야 합니다.
 - 상세 설정 방법은 [**서비스 배포 가이드**](docs/CD_SCRIPT_GUIDE.md)를 참고하세요.
 
-## 🔧 하드웨어 최적화
+## 🖥️ 서버 사양
 
-### CPU 전원 관리 (팬 소음 감소)
-
-AMD Ryzen 미니 PC 환경에서 팬 소음을 줄이기 위해 CPU 부스트를 비활성화합니다.
-
-- **문제**: CPU 부스트로 인한 급격한 온도 변화 (37°C ↔ 46°C)로 팬이 5초 주기로 폭주
-- **해결**: `cpu_power_management` role로 부스트 비활성화, 온도를 40°C대로 안정화
-- **효과**: 팬 소음 제거, 온도 안정화 (74°C → 40°C), 서버 성능 유지
-
-```bash
-# CPU 부스트 상태 확인
-cat /sys/devices/system/cpu/cpufreq/boost  # 0 = 비활성화
-
-# 서비스 상태 확인
-sudo systemctl status disable-cpu-boost.service
-
-# 온도 모니터링
-sensors
-```
-
-**비활성화 해제**: `inventory/group_vars/all/vars`에서 `cpu_boost_enabled: true`로 변경
+| 항목         | 값                                               |
+| ------------ | ------------------------------------------------ |
+| **CPU**      | AMD Ryzen 7 4700U with Radeon Graphics (8 cores) |
+| **메모리**   | 32GB RAM                                         |
+| **Swap**     | 4GB                                              |
+| **스토리지** | 512GB                                            |
+| **OS**       | Ubuntu 24.04.4 LTS                               |
 
 ## 🛠️ 시작하기 (Getting Started)
 
@@ -222,8 +209,3 @@ sensors
 ### 3. 보안 및 권한
 
 - [**계정 및 권한 관리**](docs/ACCOUNT_AND_PERMISSION_MANAGEMENT.md): `sallang-deploy` 등 서비스 계정의 역할과 Sudo 권한 상세.
-
-### 4. 기타
-
-- [**트러블슈팅**](docs/TROUBLESHOOTING.md): 자주 발생하는 문제 해결.
-- [**네트워크 장애 리포트**](docs/NETWORK_INCIDENT_REPORT_20260115.md): 과거 장애 이력.
