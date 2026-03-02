@@ -1,7 +1,8 @@
 ---
-# Tempo Configuration
+# Tempo Configuration (Single Instance Monolithic Mode)
 server:
   http_listen_port: {{ tempo_port }}
+  grpc_listen_port: 9095
 
 distributor:
   receivers:
@@ -11,6 +12,9 @@ distributor:
           endpoint: 0.0.0.0:4317
         http:
           endpoint: 0.0.0.0:4318
+  ring:
+    kvstore:
+      store: inmemory
 
 ingester:
   lifecycler:
@@ -24,6 +28,16 @@ ingester:
     kvstore:
       store: inmemory
   max_block_duration: 5m
+  lifecycler:
+    ring:
+      replication_factor: 1
+      kvstore:
+        store: inmemory
+    final_sleep: 0s
+
+querier:
+  frontend_worker:
+    frontend_address: 127.0.0.1:9095
 
 storage:
   trace:
