@@ -25,7 +25,7 @@
     name: grafana
     image: "grafana/grafana:{{ grafana_version }}"
     restart_policy: always
-    recreate: no
+    recreate: yes
     networks:
       - name: "{{ docker_network_name }}"
       - name: "{{ monitoring_network_name }}"
@@ -43,7 +43,6 @@
       traefik.http.routers.grafana.rule: "Host(`grafana.{{ domain_name }}`)"
       traefik.http.routers.grafana.entrypoints: "websecure"
       traefik.http.routers.grafana.tls.certresolver: "cloudflare"
-      traefik.http.routers.grafana.middlewares: "auth-jongmin@file"
       traefik.http.services.grafana.loadbalancer.server.port: "{{ grafana_port }}"
     memory: "{{ grafana_memory_limit }}"
     cpus: "{{ grafana_cpu_limit }}"
