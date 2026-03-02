@@ -18,6 +18,11 @@ datasources:
       timeInterval: 15s
       queryTimeout: 60s
       httpMethod: POST
+      exemplars:
+        - datasourceUid: tempo
+          internal: true
+      # Exemplars를 지원하는 Prometheus 버전(2.26+)임을 명시
+      enableExemplars: true
 
   - name: Loki
     uid: loki
@@ -28,6 +33,12 @@ datasources:
     jsonData:
       maxLines: 1000
       httpHeaderName1: 'X-Scope-OrgID'
+      derivedFields:
+        - datasourceUid: tempo
+          matcherRegex: '"traceId":"(\w+)"'
+          name: TraceID
+          url: '$${__value.raw}'
+          urlDisplayLabel: 'View Trace'
     secureJsonData:
       httpHeaderValue1: 'infra'
 
@@ -42,6 +53,19 @@ datasources:
         hide: false
       nodeGraph:
         enabled: true
+      tracesToLogsV2:
+        datasourceUid: loki
+        spanStartTimeShift: '-1h'
+        spanEndTimeShift: '1h'
+        tags:
+          - key: 'service.name'
+            value: 'application'
+        filterByTraceID: true
+        filterBySpanID: false
+        customQuery: true
+        query: '{application="$${__span.tags.service_name}"} |= "$${__span.traceId}"'
+      serviceMap:
+        datasourceUid: prometheus
 
   # ============================================================================
   # Sallang Team Datasources (Restricted Access)
