@@ -121,7 +121,7 @@
             "uid": "prometheus"
           },
           "exemplar": true,
-          "expr": "sum(rate(http_server_requests_seconds_count{status=~"5..", application="$application"}[$__rate_interval])) by (uri)",
+          "expr": "sum(rate(http_server_requests_seconds_count{status=~\"5..\", application=\"$application\"}[$__rate_interval])) by (uri)",
           "format": "time_series",
           "refId": "A"
         }
@@ -213,7 +213,7 @@
             "uid": "prometheus"
           },
           "exemplar": true,
-          "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{application="$application"}[$__rate_interval])) by (le, uri))",
+          "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{application=\"$application\"}[$__rate_interval])) by (le, uri))",
           "format": "time_series",
           "refId": "A"
         }
@@ -237,7 +237,7 @@
     {
       "datasource": {
         "type": "loki",
-        "uid": "loki"
+        "uid": "loki-sallang"
       },
       "gridPos": {
         "h": 10,
@@ -260,9 +260,9 @@
         {
           "datasource": {
             "type": "loki",
-            "uid": "loki"
+            "uid": "loki-sallang"
           },
-          "expr": "{application="$application"} |= "ERROR"",
+          "expr": "{application=\"$application\"} |= \"ERROR\"",
           "refId": "A"
         }
       ],
@@ -306,7 +306,7 @@
         }
       ],
       "title": "Trace Waterfall (Tempo)",
-      "type": "tempo"
+      "type": "traces"
     }
   ],
   "schemaVersion": 36,

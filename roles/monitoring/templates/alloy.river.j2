@@ -61,14 +61,21 @@ loki.process "tenant_mapping" {
     }
   }
 
-  stage.tenant {
-    source = "compose_project"
+  // compose_project가 있는 컨테이너(사용자 앱)는 해당 프로젝트를 테넌트로 사용
+  stage.match {
+    selector = "{compose_project!=\"\"}"
+    stage.tenant {
+      source = "compose_project"
+    }
   }
-...
-  // If no compose_project, use "infra" as default tenant
-  stage.static_labels {
-    values = {
-      __tenant_id__ = "infra",
+
+  // compose_project가 없는 컨테이너(인프라)는 "infra" 테넌트로 fallback
+  stage.match {
+    selector = "{compose_project=\"\"}"
+    stage.static_labels {
+      values = {
+        __tenant_id__ = "infra",
+      }
     }
   }
 }
