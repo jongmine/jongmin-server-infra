@@ -108,7 +108,7 @@ otelcol.receiver.otlp "default" {
 
 otelcol.exporter.otlp "tempo" {
   client {
-    endpoint = "tempo:{{ tempo_port }}"
+    endpoint = "tempo:{{ tempo_otlp_grpc_port }}"
     tls {
       insecure = true
     }
