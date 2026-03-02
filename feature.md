@@ -15,7 +15,7 @@
 - `io.opentelemetry:opentelemetry-exporter-otlp`: 트레이스 데이터를 Alloy/Tempo로 전송하기 위한 엑스포터 추가
 
 ### 설정 업데이트 (application-dev.yml)
-- **Tracing:** 샘플링 비율 100%(1.0) 설정 및 OTLP 엔드포인트(`http://alloy:4317`) 지정
+- **Tracing:** 샘플링 비율 100%(1.0) 설정 및 OTLP 엔드포인트(`http://alloy:4318`) 지정
 - **Metrics:** `percentiles-histogram` 활성화를 통해 Prometheus Exemplars 데이터 생성
 - **Logback:** `LogstashEncoder`를 통해 JSON 로그에 `trace_id` 및 `span_id` 자동 포함
 
