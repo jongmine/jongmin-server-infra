@@ -79,6 +79,7 @@
     name: portainer
     image: portainer/portainer-ce:latest
     restart_policy: always
+    recreate: yes
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
       - "portainer_data:/data"
@@ -89,5 +90,4 @@
       traefik.http.routers.portainer.rule: "Host(`portainer.{{ domain_name }}`)"
       traefik.http.routers.portainer.entrypoints: "websecure"
       traefik.http.routers.portainer.tls.certresolver: "cloudflare"
-      traefik.http.routers.portainer.middlewares: "auth-jongmin@file"
       traefik.http.services.portainer.loadbalancer.server.port: "9000"
