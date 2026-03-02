@@ -51,6 +51,9 @@
 - name: Copy custom Fail2Ban jail configuration
   copy:
     content: |
+      [DEFAULT]
+      ignoreip = {{ fail2ban_ignoreip }}
+
       [sshd]
       enabled = true
       port = 22
