@@ -1,22 +1,31 @@
 ---
 # Alertmanager Configuration
-# Note: Slack notifications are disabled. Alerts are only visible in Alertmanager UI and Grafana.
 global:
   resolve_timeout: 5m
+  slack_api_url: '{{ alertmanager_slack_webhook }}'
 
 route:
-  receiver: 'null'
+  receiver: 'default-receiver'
   group_by: ['alertname', 'team']
   group_wait: 10s
   group_interval: 10s
   repeat_interval: 12h
 
 receivers:
-  - name: 'null'
-    # No notification receivers configured
-    # Alerts will be visible in:
-    # - Alertmanager UI: http://<server-ip>:9093 (via Tailscale VPN)
-    # - Grafana Alerting page
+  - name: 'default-receiver'
+    slack_configs:
+      - channel: '#alert-infra'
+        send_resolved: true
+        title: '{% raw %}{{ if eq .Status "firing" }}🔥 [{{ .CommonLabels.severity | toUpper }}] {{ .CommonLabels.alertname }}{{ else }}✅ [RESOLVED] {{ .CommonLabels.alertname }}{{ end }}{% endraw %}'
+        text: |
+          {% raw %}{{ range .Alerts }}
+          {{ if .Labels.name }}*컨테이너*: `{{ .Labels.name }}`{{ end }}
+          *설명*: {{ .Annotations.description }}
+          *심각도*: {{ .Labels.severity }}
+          *팀*: {{ .Labels.team }}
+          *시작*: {{ (.StartsAt.Add 32400000000000).Format "2006-01-02 15:04:05 KST" }}
+          *Grafana*: https://grafana.{{ domain_name }}/alerting/list?search={{ .Labels.alertname }}
+          {{ end }}{% endraw %}
 
 inhibit_rules:
   - source_match:
@@ -26,14 +35,31 @@ inhibit_rules:
     equal: ['alertname', 'instance']
 
 {#
-To enable Slack notifications later:
-1. Add to inventory/group_vars/all/vault:
-   vault_alertmanager_slack_webhook: "https://hooks.slack.com/services/..."
+To enable Slack + Telegram notifications:
 
-2. Add to inventory/group_vars/all/vars:
-   alertmanager_slack_webhook: "{{ vault_alertmanager_slack_webhook }}"
+=== Step 1: Vault에 추가 ===
+ansible-vault edit inventory/group_vars/all/vault
 
-3. Replace the configuration above with:
+  # Slack: api.slack.com/apps → New App → Incoming Webhooks → 채널별 URL 발급
+  # (반드시 Slack App Incoming Webhook 사용. Legacy custom integration 사용 금지)
+  vault_alertmanager_slack_webhook: "https://hooks.slack.com/services/T.../B.../xxx"
+
+  # Telegram: @BotFather → /newbot → Bot Token 발급
+  # Chat ID: 봇에게 메시지 보낸 후 https://api.telegram.org/bot<TOKEN>/getUpdates 에서 확인
+  vault_alertmanager_telegram_bot_token: "1234567890:ABCDEFxxxxxxxxxxxxxxxx"
+  vault_alertmanager_telegram_chat_id: -1001234567890  # 그룹 채팅은 음수
+
+=== Step 2: inventory/group_vars/all/vars에 추가 ===
+
+  alertmanager_slack_webhook: "{{ vault_alertmanager_slack_webhook }}"
+  alertmanager_telegram_bot_token: "{{ vault_alertmanager_telegram_bot_token }}"
+  alertmanager_telegram_chat_id: "{{ vault_alertmanager_telegram_chat_id }}"
+
+=== Step 3: 아래 설정으로 교체 ===
+
+global:
+  resolve_timeout: 5m
+  slack_api_url: '{{ alertmanager_slack_webhook }}'
 
 route:
   receiver: 'default-receiver'
@@ -53,14 +79,39 @@ route:
 receivers:
   - name: 'default-receiver'
     slack_configs:
-      - api_url: '{{ alertmanager_slack_webhook }}'
-        channel: '#infra-warnings'
+      - channel: '#infra-warnings'
+        send_resolved: true
+    telegram_configs:
+      - bot_token: '{{ alertmanager_telegram_bot_token }}'
+        chat_id: {{ alertmanager_telegram_chat_id }}
+        parse_mode: 'HTML'
+        send_resolved: true
+
   - name: 'infra-critical'
     slack_configs:
-      - api_url: '{{ alertmanager_slack_webhook }}'
-        channel: '#infra-critical'
+      - channel: '#infra-critical'
+        send_resolved: true
+    telegram_configs:
+      - bot_token: '{{ alertmanager_telegram_bot_token }}'
+        chat_id: {{ alertmanager_telegram_chat_id }}
+        parse_mode: 'HTML'
+        send_resolved: true
+
   - name: 'sallang-alerts'
     slack_configs:
-      - api_url: '{{ alertmanager_slack_webhook }}'
-        channel: '#sallang-alerts'
+      - channel: '#sallang-alerts'
+        send_resolved: true
+    telegram_configs:
+      - bot_token: '{{ alertmanager_telegram_bot_token }}'
+        chat_id: {{ alertmanager_telegram_chat_id }}
+        parse_mode: 'HTML'
+        send_resolved: true
+
+=== Step 4: 배포 ===
+ansible-playbook -i inventory/hosts.yml playbooks/site.yml --tags monitoring-alertmanager --ask-vault-pass
+
+=== Step 5: 테스트 알림 발송 ===
+curl -s -XPOST http://<tailscale-ip>:9093/api/v2/alerts \
+  -H "Content-Type: application/json" \
+  -d '[{"labels":{"alertname":"TestAlert","severity":"warning","team":"infra"},"annotations":{"description":"테스트 알림"},"endsAt":"2099-01-01T00:00:00Z"}]'
 #}

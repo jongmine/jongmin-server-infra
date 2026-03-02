@@ -58,12 +58,16 @@
     name: alertmanager
     image: "prom/alertmanager:{{ alertmanager_version }}"
     restart_policy: always
-    recreate: no
+    recreate: yes
     networks:
       - name: "{{ monitoring_network_name }}"
+      - name: "{{ docker_network_name }}"  # 외부 인터넷 접근 (Slack 알림 발송)
+    published_ports:
+      - "9093:9093"  # Tailscale VPN 경유 접근용
     command:
       - "--config.file=/etc/alertmanager/config.yml"
       - "--storage.path=/alertmanager"
+      - "--web.external-url=http://{{ server_hostname }}:9093"
     volumes:
       - "/etc/monitoring/alertmanager/config.yml:/etc/alertmanager/config.yml:ro"
     memory: "{{ alertmanager_memory_limit }}"
