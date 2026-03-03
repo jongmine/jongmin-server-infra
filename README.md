@@ -74,12 +74,19 @@ graph TD
 │   │   └── handlers/         # 재시작 핸들러
 │   ├── homepage/             # Dashboard
 │   ├── tailscale/            # VPN
-│   └── ...
+│   ├── ddns/                 # Dynamic DNS 업데이트
+│   ├── fail2ban/             # 침입 차단 (Brute-force 방어)
+│   └── monitoring/           # Grafana / Prometheus / Loki / Tempo 스택
 ├── docs/                     # 📚 Documentation
-│   ├── CD_SCRIPT_GUIDE.md    # [중요] 서비스 배포 가이드
-│   ├── ACCOUNT_..._MGMT.md   # 계정 및 권한 관리
-│   ├── ANSIBLE_DOCKER_GUIDE.md # 인프라 vs 앱 관리 기준
-│   └── ...
+│   ├── CD_SCRIPT_GUIDE.md              # [중요] 서비스 배포 가이드
+│   ├── MONITORING_GUIDE.md             # 모니터링 스택 가이드
+│   ├── TROUBLESHOOTING.md              # 트러블슈팅 모음
+│   ├── ANSIBLE_DOCKER_GUIDE.md         # 인프라 vs 앱 관리 기준
+│   ├── ACCOUNT_AND_PERMISSION_MANAGEMENT.md # 계정 및 권한 관리
+│   ├── TRAEFIK_GUIDE.md                # 게이트웨이 상세 설정
+│   ├── HOMEPAGE_GUIDE.md               # 대시보드 커스터마이징
+│   ├── TAILSCALE_ACL_GUIDE.md          # VPN 접근 제어 정책
+│   └── PORTAINER_GUIDE.md              # 컨테이너 GUI 관리
 └── README.md                 # 이 파일
 ```
 
@@ -165,9 +172,10 @@ ansible-playbook -i inventory/hosts.yml playbooks/site.yml --check --ask-vault-p
 ### 1. 배포 및 운영 (For Developers & Agents)
 
 - [**서비스 배포 가이드 (CD Guide)**](docs/CD_SCRIPT_GUIDE.md): 새로운 서비스를 배포할 때 가장 먼저 읽어야 할 문서. 네트워크 구조와 CD 스크립트 템플릿을 제공합니다.
-- [**서버 유지보수 가이드 (Maintenance)**](docs/MAINTENANCE_GUIDE.md): 서버 종료, 램 증설 등 하드웨어 작업 시 안전한 셧다운 절차.
 - [**Docker 운영 전략**](docs/ANSIBLE_DOCKER_GUIDE.md): Ansible로 관리하는 것과 Portainer로 관리하는 것의 차이를 설명합니다.
 - [**Portainer 가이드**](docs/PORTAINER_GUIDE.md): GUI를 이용한 컨테이너 모니터링 및 임시 배포 방법.
+- [**모니터링 가이드**](docs/MONITORING_GUIDE.md): Grafana / Prometheus / Loki / Tempo 스택 운영 및 대시보드 가이드.
+- [**트러블슈팅 가이드**](docs/TROUBLESHOOTING.md): 자주 발생하는 문제 해결 방법 모음.
 
 ## 🛡️ 보안 정책 (Security Policy)
 
