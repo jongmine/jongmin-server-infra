@@ -23,6 +23,13 @@ ingester:
     final_sleep: 0s
   max_block_duration: 5m
 
+compactor:
+  compaction:
+    block_retention: {{ tempo_retention }}
+  ring:
+    kvstore:
+      store: inmemory
+
 storage:
   trace:
     backend: local
@@ -30,10 +37,6 @@ storage:
       path: /tmp/tempo/blocks
     wal:
       path: /tmp/tempo/wal
-
-querier:
-  frontend_worker:
-    frontend_address: ""
 
 metrics_generator:
   ring:
