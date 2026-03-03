@@ -34,16 +34,16 @@ storage:
   trace:
     backend: local
     local:
-      path: /tmp/tempo/blocks
+      path: /var/lib/tempo/blocks
     wal:
-      path: /tmp/tempo/wal
+      path: /var/lib/tempo/wal
 
 metrics_generator:
   ring:
     kvstore:
       store: inmemory
   storage:
-    path: /tmp/tempo/generator/wal
+    path: /var/lib/tempo/generator/wal
 
 overrides:
   defaults:
