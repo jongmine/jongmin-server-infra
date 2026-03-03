@@ -7,4 +7,4 @@ inventory/group_vars/all_vault.yml
 
 # AI Context Files
 context.md
-checklist.md
+checklist.md.ansible/.lock
