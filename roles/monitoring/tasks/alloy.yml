@@ -26,7 +26,7 @@
       - name: "{{ monitoring_network_name }}"
     command:
       - "run"
-      - "--server.http.listen-addr=0.0.0.0:12345"
+      - "--server.http.listen-addr=0.0.0.0:{{ alloy_ui_port }}"
       - "--storage.path=/var/lib/alloy/data"
       - "/etc/alloy/config.alloy"
     volumes:

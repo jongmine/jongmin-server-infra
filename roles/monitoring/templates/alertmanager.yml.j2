@@ -24,7 +24,7 @@ receivers:
           *심각도*: {{ .Labels.severity }}
           *팀*: {{ .Labels.team }}
           *시작*: {{ (.StartsAt.Add 32400000000000).Format "2006-01-02 15:04:05 KST" }}
-          *Grafana*: https://grafana.{{ domain_name }}/alerting/list?search={{ .Labels.alertname }}
+          *Grafana*: https://grafana.{% endraw %}{{ domain_name }}{% raw %}/alerting/list?search={{ .Labels.alertname }}
           {{ end }}{% endraw %}
 
 inhibit_rules:
