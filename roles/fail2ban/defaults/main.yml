@@ -5,7 +5,7 @@
 fail2ban_bantime: 3600 # 1 hour (seconds)
 fail2ban_maxretry: 5 # Maximum retry attempts
 fail2ban_findtime: 600 # 10 minutes (seconds)
-fail2ban_ignoreip: "127.0.0.1/8 ::1 100.64.0.0/10" # Whitelist localhost and Tailscale range
+fail2ban_ignoreip: "127.0.0.1/8 ::1" # Whitelist localhost only; override in inventory vars to add Tailscale range (e.g. 100.64.0.0/10)
 
 # Notification
 fail2ban_destemail: "root@localhost"
