@@ -72,10 +72,8 @@ loki.process "tenant_mapping" {
   // compose_project가 없는 컨테이너(인프라)는 "infra" 테넌트로 fallback
   stage.match {
     selector = "{compose_project=\"\"}"
-    stage.static_labels {
-      values = {
-        __tenant_id__ = "infra",
-      }
+    stage.tenant {
+      value = "infra"
     }
   }
 }
