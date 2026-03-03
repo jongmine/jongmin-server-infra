@@ -97,7 +97,7 @@ scrape_configs:
         regex: /?(.+)
 
       # Add team label from monitoring.team label
-      - source_labels: [__meta_docker_container_label_team]
+      - source_labels: [__meta_docker_container_label_monitoring_team]
         target_label: team
 
       # Add compose project label
