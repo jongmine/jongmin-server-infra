@@ -18,6 +18,6 @@
       - "-config.file=/etc/tempo/config.yml"
     volumes:
       - "/etc/monitoring/tempo/config.yml:/etc/tempo/config.yml:ro"
-      - "/etc/monitoring/tempo/data:/tmp/tempo"
+      - "/etc/monitoring/tempo/data:/var/lib/tempo"
     memory: "{{ tempo_memory_limit }}"
     cpus: "{{ tempo_cpu_limit }}"
