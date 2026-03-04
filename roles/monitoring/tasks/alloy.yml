@@ -32,6 +32,8 @@
     volumes:
       - "/etc/monitoring/alloy/config.alloy:/etc/alloy/config.alloy:ro"
       - "/etc/monitoring/alloy/data:/var/lib/alloy/data"
+      # TODO: docker-socket-proxy 도입 후 소켓 직접 마운트 제거
+      # https://github.com/Tecnativa/docker-socket-proxy 참고
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
     ports:
       - "{{ alloy_otlp_port }}:{{ alloy_otlp_port }}"
