@@ -97,7 +97,7 @@ labels:
   monitoring.scrape: "true"
   monitoring.port: "8080"
   monitoring.path: "/metrics"
-  team: "sallang" # 팀 식별자 (알림 라우팅에 사용)
+  monitoring.team: "sallang" # 팀 식별자 (알림 라우팅에 사용)
 ```
 
 ### 3.2 Loki — 로그 집계
@@ -321,7 +321,7 @@ sallang 전용 Prometheus 데이터소스는 `team="sallang"` 레이블 필터�
 
 ### 대시보드 파일 위치
 
-```
+```text
 roles/monitoring/files/dashboards/
 ├── docker-container-host.json
 ├── loki-dashboard.json
@@ -404,7 +404,7 @@ ansible-vault edit inventory/group_vars/all/vault
 
 ### Role 파일 구조
 
-```
+```text
 roles/monitoring/
 ├── defaults/main.yml          # 버전, 포트, 리소스 제한 기본값
 ├── tasks/
