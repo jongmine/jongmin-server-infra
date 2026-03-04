@@ -12,7 +12,9 @@
   template:
     src: datasources.yml.j2
     dest: /etc/monitoring/grafana/provisioning/datasources/datasources.yml
-    mode: '0644'
+    owner: "472"
+    group: "472"
+    mode: '0600'
   notify: Restart Grafana
 
 - name: Deploy Grafana dashboards provisioning
@@ -27,7 +29,7 @@
     name: grafana
     image: "grafana/grafana:{{ grafana_version }}"
     restart_policy: always
-    recreate: yes
+    recreate: no
     networks:
       - name: "{{ docker_network_name }}"
       - name: "{{ monitoring_network_name }}"
@@ -42,6 +44,7 @@
       - "/etc/monitoring/grafana/data:/var/lib/grafana"
     labels:
       traefik.enable: "true"
+      traefik.docker.network: "{{ docker_network_name }}"
       traefik.http.routers.grafana.rule: "Host(`grafana.{{ domain_name }}`)"
       traefik.http.routers.grafana.entrypoints: "websecure"
       traefik.http.routers.grafana.tls.certresolver: "cloudflare"
