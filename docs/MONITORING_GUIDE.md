@@ -391,7 +391,7 @@ ansible-playbook playbooks/site.yml --tags monitoring-grafana
 ansible-playbook playbooks/site.yml --tags monitoring-prometheus
 
 # 대시보드 파일만 업데이트
-ansible-playbook playbooks/site.yml --tags monitoring-dashboards
+ansible-playbook playbooks/site.yml --tags monitoring-grafana-dashboards
 ```
 
 ### Vault 변수 편집
@@ -462,7 +462,7 @@ roles/monitoring/
 ### 자주 묻는 것들
 
 **Q: Grafana에서 로그가 조회되지 않습니다.**
-Loki 데이터소스 설정의 `X-Scope-OrgID` 헤더가 올바른지 확인하세요. sallang 팀은 `sallang-backend`, 인프라는 `infra`를 사용합니다.
+Loki 데이터소스 설정의 `X-Scope-OrgID` 헤더가 올바른지 확인하세요. sallang 팀은 `sallang`, 인프라는 `infra`를 사용합니다.
 
 **Q: Grafana에서 대시보드 패널에 N/A가 표시됩니다.**
 쿼리에서 사용하는 메트릭명이 실제 Prometheus에 존재하는지 확인하세요. Node Exporter 1.0+ 이후 일부 메트릭명에 `_bytes`, `_seconds`, `_total` 접미사가 추가되었습니다.
