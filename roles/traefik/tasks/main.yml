@@ -35,7 +35,7 @@
     recreate: no
     networks:
       - name: "{{ docker_network_name }}"
-      - name: "monitoring-net"
+      - name: "{{ monitoring_network_name }}"
     ports:
       - "80:80"
       - "443:443"
