@@ -465,7 +465,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "topk(15,\n    label_replace(\n        traefik_service_request_duration_seconds_sum{service=~\"$service.*\",protocol=\"http\"} / \n          traefik_service_request_duration_seconds_count{service=~\"$service.*\",protocol=\"http\"},\n        \"service\", \"$1\", \"service\", \"([^-]+-[^-]+).*\")\n)\n\n",
+          "expr": "topk(15,\n    label_replace(\n        rate(traefik_service_request_duration_seconds_sum{service=~\"$service.*\",protocol=\"http\"}[$interval]) / \n          clamp_min(rate(traefik_service_request_duration_seconds_count{service=~\"$service.*\",protocol=\"http\"}[$interval]), 1e-9),\n        \"service\", \"$1\", \"service\", \"([^-]+-[^-]+).*\")\n)\n\n",
           "legendFormat": "{{method}}[{{code}}] on {{service}}",
           "range": true,
           "refId": "A"

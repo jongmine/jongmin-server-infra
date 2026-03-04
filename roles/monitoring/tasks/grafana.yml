@@ -3,7 +3,7 @@
   template:
     src: grafana.ini.j2
     dest: /etc/monitoring/grafana/grafana.ini
-    mode: '0644'
+    mode: '0600'
   notify: Restart Grafana
 
 - name: Deploy Grafana datasources provisioning

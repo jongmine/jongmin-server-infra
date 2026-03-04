@@ -65,7 +65,7 @@ loki.process "tenant_mapping" {
   stage.match {
     selector = "{compose_project!=\"\"}"
     stage.tenant {
-      source = "compose_project"
+      label = "compose_project"
     }
   }
 
