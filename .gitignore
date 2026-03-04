@@ -2,3 +2,9 @@ inventory/group_vars/all_vault.yml
 .vault_pass
 .DS_Store
 *.retry
+.vscode/
+.omc/
+
+# AI Context Files
+context.md
+checklist.md.ansible/.lock

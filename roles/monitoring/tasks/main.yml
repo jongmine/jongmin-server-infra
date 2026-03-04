@@ -1,0 +1,58 @@
+---
+# Monitoring Stack Deployment
+# Order matters: network → directories → services (Prometheus, Loki, Tempo) → Grafana → exporters → Alloy
+
+- name: Setup monitoring network
+  import_tasks: network.yml
+  tags:
+    - monitoring
+    - monitoring-network
+
+- name: Create monitoring directories
+  import_tasks: directories.yml
+  tags:
+    - monitoring
+    - monitoring-directories
+
+- name: Deploy Prometheus and Alertmanager
+  import_tasks: prometheus.yml
+  tags:
+    - monitoring
+    - monitoring-prometheus
+
+- name: Deploy Loki
+  import_tasks: loki.yml
+  tags:
+    - monitoring
+    - monitoring-loki
+
+- name: Deploy Tempo
+  import_tasks: tempo.yml
+  tags:
+    - monitoring
+    - monitoring-tempo
+
+- name: Deploy Grafana
+  import_tasks: grafana.yml
+  tags:
+    - monitoring
+    - monitoring-grafana
+
+- name: Provision Grafana dashboards
+  import_tasks: grafana_dashboards.yml
+  tags:
+    - monitoring
+    - monitoring-grafana
+    - monitoring-grafana-dashboards
+
+- name: Deploy exporters (Node Exporter + cAdvisor)
+  import_tasks: exporters.yml
+  tags:
+    - monitoring
+    - monitoring-exporters
+
+- name: Deploy Alloy
+  import_tasks: alloy.yml
+  tags:
+    - monitoring
+    - monitoring-alloy

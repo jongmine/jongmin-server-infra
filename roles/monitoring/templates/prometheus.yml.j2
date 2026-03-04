@@ -1,0 +1,109 @@
+---
+# Prometheus Configuration
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'homelab'
+    environment: 'production'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - alertmanager:{{ alertmanager_port }}
+
+# Load rules once and periodically evaluate them
+rule_files:
+  - /etc/prometheus/rules/*.yml
+
+# Scrape configurations
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:{{ prometheus_port }}']
+        labels:
+          service: 'prometheus'
+          team: 'infra'
+
+  # Node Exporter (host metrics)
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:{{ node_exporter_port }}']
+        labels:
+          service: 'node-exporter'
+          team: 'infra'
+
+  # cAdvisor (container metrics)
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:{{ cadvisor_port }}']
+        labels:
+          service: 'cadvisor'
+          team: 'infra'
+
+  # Loki metrics
+  - job_name: 'loki'
+    static_configs:
+      - targets: ['loki:{{ loki_port }}']
+        labels:
+          service: 'loki'
+          team: 'infra'
+
+  # Tempo metrics
+  - job_name: 'tempo'
+    static_configs:
+      - targets: ['tempo:{{ tempo_port }}']
+        labels:
+          service: 'tempo'
+          team: 'infra'
+
+  # Grafana metrics
+  - job_name: 'grafana'
+    static_configs:
+      - targets: ['grafana:{{ grafana_port }}']
+        labels:
+          service: 'grafana'
+          team: 'infra'
+
+  # Docker Service Discovery - scrape services with monitoring.scrape=true label
+  - job_name: 'docker-services'
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 30s
+    relabel_configs:
+      # Only scrape containers with monitoring.scrape=true
+      - source_labels: [__meta_docker_container_label_monitoring_scrape]
+        regex: "true"
+        action: keep
+
+      # Extract port and set address (container_name:port)
+      - source_labels: [__meta_docker_container_name, __meta_docker_container_label_monitoring_port]
+        separator: ':'
+        regex: '/?(.+):(.+)'
+        target_label: __address__
+        replacement: '$1:$2'
+
+      # Extract path from monitoring.path label (default: /metrics)
+      - source_labels: [__meta_docker_container_label_monitoring_path]
+        target_label: __metrics_path__
+        regex: (.+)
+
+      # Add container name as label
+      - source_labels: [__meta_docker_container_name]
+        target_label: container_name
+        regex: /?(.+)
+
+      # Add team label from monitoring.team label
+      - source_labels: [__meta_docker_container_label_monitoring_team]
+        target_label: team
+
+      # Add compose project label
+      - source_labels: [__meta_docker_container_label_com_docker_compose_project]
+        target_label: compose_project
+
+      # Add compose service label
+      - source_labels: [__meta_docker_container_label_com_docker_compose_service]
+        target_label: compose_service

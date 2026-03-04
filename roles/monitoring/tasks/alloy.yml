@@ -1,0 +1,42 @@
+---
+- name: Deploy Alloy configuration
+  template:
+    src: alloy.river.j2
+    dest: /etc/monitoring/alloy/config.alloy
+    mode: '0644'
+  notify: Restart Alloy
+
+- name: Create Alloy data directory
+  file:
+    path: /etc/monitoring/alloy/data
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Run Alloy container
+  docker_container:
+    name: alloy
+    image: "grafana/alloy:{{ alloy_version }}"
+    restart_policy: always
+    recreate: no
+    groups:
+      - "988"  # docker group for socket access
+    networks:
+      - name: "{{ monitoring_network_name }}"
+    command:
+      - "run"
+      - "--server.http.listen-addr=0.0.0.0:{{ alloy_ui_port }}"
+      - "--storage.path=/var/lib/alloy/data"
+      - "/etc/alloy/config.alloy"
+    volumes:
+      - "/etc/monitoring/alloy/config.alloy:/etc/alloy/config.alloy:ro"
+      - "/etc/monitoring/alloy/data:/var/lib/alloy/data"
+      # TODO: docker-socket-proxy 도입 후 소켓 직접 마운트 제거
+      # https://github.com/Tecnativa/docker-socket-proxy 참고
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    ports:
+      - "{{ alloy_otlp_port }}:{{ alloy_otlp_port }}"
+      - "{{ alloy_http_port }}:{{ alloy_http_port }}"
+    memory: "{{ alloy_memory_limit }}"
+    cpus: "{{ alloy_cpu_limit }}"

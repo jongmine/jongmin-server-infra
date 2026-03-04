@@ -1,0 +1,104 @@
+---
+- name: Create monitoring base directory
+  file:
+    path: /etc/monitoring
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Create Prometheus directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  with_items:
+    - /etc/monitoring/prometheus
+    - /etc/monitoring/prometheus/rules
+
+- name: Create Prometheus data directory with correct permissions
+  file:
+    path: /etc/monitoring/prometheus/data
+    state: directory
+    owner: '65534'
+    group: '65534'
+    mode: '0750'
+
+- name: Create Loki config directory
+  file:
+    path: /etc/monitoring/loki
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Create Loki data directory with correct permissions
+  file:
+    path: /etc/monitoring/loki/data
+    state: directory
+    owner: '10001'
+    group: '10001'
+    mode: '0750'
+
+- name: Create Tempo config directory
+  file:
+    path: /etc/monitoring/tempo
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Create Tempo data directory with correct permissions
+  file:
+    path: /etc/monitoring/tempo/data
+    state: directory
+    owner: '10001'
+    group: '10001'
+    mode: '0750'
+
+- name: Create Grafana directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  with_items:
+    - /etc/monitoring/grafana
+    - /etc/monitoring/grafana/provisioning
+    - /etc/monitoring/grafana/provisioning/datasources
+    - /etc/monitoring/grafana/provisioning/dashboards
+
+- name: Create Grafana data directory with correct permissions
+  file:
+    path: /etc/monitoring/grafana/data
+    state: directory
+    owner: '472'
+    group: '472'
+    mode: '0750'
+
+- name: Create Alertmanager directory
+  file:
+    path: /etc/monitoring/alertmanager
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Create Alertmanager data directory with correct permissions
+  file:
+    path: /etc/monitoring/alertmanager/data
+    state: directory
+    owner: nobody
+    group: nogroup
+    mode: '0750'
+
+- name: Create Alloy directory
+  file:
+    path: /etc/monitoring/alloy
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'

@@ -43,3 +43,22 @@ portainer_env_id: "{{ vault_portainer_env_id }}"
 
 # IP AllowList
 developer_ips: "{{ vault_developer_ips }}"
+
+# =======================================================================
+# Monitoring Stack Configuration
+# =======================================================================
+
+# Grafana Configuration (vault reference)
+grafana_admin_user: "{{ vault_grafana_admin_user }}"
+grafana_admin_password: "{{ vault_grafana_admin_password }}"
+
+# Alertmanager - Slack (vault reference)
+# Slack App Incoming Webhook 사용 (legacy custom integration 사용 금지)
+alertmanager_slack_webhook: "{{ vault_alertmanager_slack_webhook }}"
+
+# Server hostname (Tailscale MagicDNS 경유 접근용)
+server_hostname: "jongmin-server"
+
+# TODO: Telegram 알림 활성화 시 vault에 저장 후 주석 해제
+# alertmanager_telegram_bot_token: "{{ vault_alertmanager_telegram_bot_token }}"
+# alertmanager_telegram_chat_id: "{{ vault_alertmanager_telegram_chat_id }}"

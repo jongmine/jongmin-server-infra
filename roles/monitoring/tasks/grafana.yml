@@ -1,0 +1,53 @@
+---
+- name: Deploy Grafana configuration
+  template:
+    src: grafana.ini.j2
+    dest: /etc/monitoring/grafana/grafana.ini
+    owner: "472"
+    group: "472"
+    mode: '0600'
+  notify: Restart Grafana
+
+- name: Deploy Grafana datasources provisioning
+  template:
+    src: datasources.yml.j2
+    dest: /etc/monitoring/grafana/provisioning/datasources/datasources.yml
+    owner: "472"
+    group: "472"
+    mode: '0600'
+  notify: Restart Grafana
+
+- name: Deploy Grafana dashboards provisioning
+  template:
+    src: dashboards.yml.j2
+    dest: /etc/monitoring/grafana/provisioning/dashboards/dashboards.yml
+    mode: '0644'
+  notify: Restart Grafana
+
+- name: Run Grafana container
+  docker_container:
+    name: grafana
+    image: "grafana/grafana:{{ grafana_version }}"
+    restart_policy: always
+    recreate: no
+    networks:
+      - name: "{{ docker_network_name }}"
+      - name: "{{ monitoring_network_name }}"
+    env:
+      GF_SECURITY_ADMIN_USER: "{{ grafana_admin_user }}"
+      GF_SECURITY_ADMIN_PASSWORD: "{{ grafana_admin_password }}"
+      GF_PATHS_CONFIG: "/etc/grafana/grafana.ini"
+      GF_PATHS_PROVISIONING: "/etc/grafana/provisioning"
+    volumes:
+      - "/etc/monitoring/grafana/grafana.ini:/etc/grafana/grafana.ini:ro"
+      - "/etc/monitoring/grafana/provisioning:/etc/grafana/provisioning:ro"
+      - "/etc/monitoring/grafana/data:/var/lib/grafana"
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: "{{ docker_network_name }}"
+      traefik.http.routers.grafana.rule: "Host(`grafana.{{ domain_name }}`)"
+      traefik.http.routers.grafana.entrypoints: "websecure"
+      traefik.http.routers.grafana.tls.certresolver: "cloudflare"
+      traefik.http.services.grafana.loadbalancer.server.port: "{{ grafana_port }}"
+    memory: "{{ grafana_memory_limit }}"
+    cpus: "{{ grafana_cpu_limit }}"

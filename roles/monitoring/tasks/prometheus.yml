@@ -1,0 +1,90 @@
+---
+- name: Deploy Prometheus configuration
+  template:
+    src: prometheus.yml.j2
+    dest: /etc/monitoring/prometheus/prometheus.yml
+    mode: '0644'
+  notify: Restart Prometheus
+
+- name: Deploy Prometheus alert rules - Infrastructure
+  template:
+    src: alert_rules_infra.yml.j2
+    dest: /etc/monitoring/prometheus/rules/alert_rules_infra.yml
+    mode: '0644'
+  notify: Restart Prometheus
+
+- name: Deploy Prometheus alert rules - Sallang
+  template:
+    src: alert_rules_sallang.yml.j2
+    dest: /etc/monitoring/prometheus/rules/alert_rules_sallang.yml
+    mode: '0644'
+  notify: Restart Prometheus
+
+- name: Get docker group GID
+  command: getent group docker
+  register: docker_group_entry
+  changed_when: false
+  check_mode: false
+
+- name: Set docker GID fact
+  set_fact:
+    docker_gid: "{{ docker_group_entry.stdout.split(':')[2] }}"
+
+- name: Run Prometheus container
+  docker_container:
+    name: prometheus
+    image: "prom/prometheus:{{ prometheus_version }}"
+    restart_policy: always
+    recreate: no
+    user: "nobody"
+    groups:
+      - "{{ docker_gid }}"
+    networks:
+      - name: "{{ monitoring_network_name }}"
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time={{ prometheus_retention }}"
+      - "--web.console.libraries=/usr/share/prometheus/console_libraries"
+      - "--web.console.templates=/usr/share/prometheus/consoles"
+      - "--web.enable-lifecycle"
+      - "--enable-feature=exemplar-storage"
+    volumes:
+      - "/etc/monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro"
+      - "/etc/monitoring/prometheus/rules:/etc/prometheus/rules:ro"
+      - "/etc/monitoring/prometheus/data:/prometheus"
+      # TODO: docker-socket-proxy 도입 후 소켓 직접 마운트 제거
+      # https://github.com/Tecnativa/docker-socket-proxy 참고
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    memory: "{{ prometheus_memory_limit }}"
+    cpus: "{{ prometheus_cpu_limit }}"
+
+- name: Deploy Alertmanager configuration
+  template:
+    src: alertmanager.yml.j2
+    dest: /etc/monitoring/alertmanager/config.yml
+    owner: nobody
+    group: nogroup
+    mode: '0600'
+  notify: Restart Alertmanager
+
+- name: Run Alertmanager container
+  docker_container:
+    name: alertmanager
+    image: "prom/alertmanager:{{ alertmanager_version }}"
+    restart_policy: always
+    recreate: no
+    networks:
+      - name: "{{ monitoring_network_name }}"
+      - name: "{{ docker_network_name }}"  # 외부 인터넷 접근 (Slack 알림 발송)
+    published_ports:
+      - "9093:9093"  # Tailscale VPN 경유 접근용
+    command:
+      - "--config.file=/etc/alertmanager/config.yml"
+      - "--storage.path=/alertmanager"
+      - "--web.external-url=http://{{ server_hostname }}:9093"
+    volumes:
+      - "/etc/monitoring/alertmanager/config.yml:/etc/alertmanager/config.yml:ro"
+      - "/etc/monitoring/alertmanager/data:/alertmanager"
+    memory: "{{ alertmanager_memory_limit }}"
+    cpus: "{{ alertmanager_cpu_limit }}"

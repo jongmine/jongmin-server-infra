@@ -70,3 +70,9 @@
           type: tailscale
           deviceid: "{{ tailscale_device_id }}"
           key: "{{ tailscale_api_key }}"
+
+- Monitoring:
+    - Grafana:
+        icon: grafana
+        href: "https://grafana.{{ domain_name }}"
+        description: "Metrics, Logs, Traces"

@@ -1,0 +1,51 @@
+---
+# Tempo Configuration (Single Instance Monolithic Mode)
+server:
+  http_listen_port: {{ tempo_port }}
+  grpc_listen_port: 9095
+
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: 0.0.0.0:4317
+        http:
+          endpoint: 0.0.0.0:4318
+
+ingester:
+  lifecycler:
+    address: 127.0.0.1
+    ring:
+      kvstore:
+        store: inmemory
+      replication_factor: 1
+    final_sleep: 0s
+  max_block_duration: 5m
+
+compactor:
+  compaction:
+    block_retention: {{ tempo_retention }}
+  ring:
+    kvstore:
+      store: inmemory
+
+storage:
+  trace:
+    backend: local
+    local:
+      path: /var/lib/tempo/blocks
+    wal:
+      path: /var/lib/tempo/wal
+
+metrics_generator:
+  ring:
+    kvstore:
+      store: inmemory
+  storage:
+    path: /var/lib/tempo/generator/wal
+
+overrides:
+  defaults:
+    metrics_generator:
+      processors: []

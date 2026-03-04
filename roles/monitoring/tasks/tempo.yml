@@ -1,0 +1,23 @@
+---
+- name: Deploy Tempo configuration
+  template:
+    src: tempo.yml.j2
+    dest: /etc/monitoring/tempo/config.yml
+    mode: '0644'
+  notify: Restart Tempo
+
+- name: Run Tempo container
+  docker_container:
+    name: tempo
+    image: "grafana/tempo:{{ tempo_version }}"
+    restart_policy: always
+    recreate: no
+    networks:
+      - name: "{{ monitoring_network_name }}"
+    command:
+      - "-config.file=/etc/tempo/config.yml"
+    volumes:
+      - "/etc/monitoring/tempo/config.yml:/etc/tempo/config.yml:ro"
+      - "/etc/monitoring/tempo/data:/var/lib/tempo"
+    memory: "{{ tempo_memory_limit }}"
+    cpus: "{{ tempo_cpu_limit }}"

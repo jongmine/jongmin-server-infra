@@ -1,0 +1,51 @@
+---
+# Monitoring Stack Default Variables
+
+# Component Versions
+prometheus_version: "v2.51.2"
+loki_version: "3.0.0"
+tempo_version: "2.5.0"
+grafana_version: "11.6.12"
+alloy_version: "v1.1.1"
+alertmanager_version: "v0.27.0"
+node_exporter_version: "v1.8.1"
+cadvisor_version: "latest"
+alloy_ui_port: 12345
+
+# Network
+monitoring_network_name: "monitoring-net"
+
+# Data Retention
+prometheus_retention: "15d"
+loki_retention: "744h"
+tempo_retention: "168h"
+
+# Internal Ports
+prometheus_port: 9090
+loki_port: 3100
+tempo_port: 3200
+grafana_port: 3000
+alertmanager_port: 9093
+alloy_otlp_port: 4317
+alloy_http_port: 4318
+tempo_otlp_grpc_port: 4317
+node_exporter_port: 9100
+cadvisor_port: 8080
+
+# Resource Limits
+prometheus_memory_limit: "1g"
+prometheus_cpu_limit: "1.0"
+loki_memory_limit: "512m"
+loki_cpu_limit: "0.5"
+tempo_memory_limit: "512m"
+tempo_cpu_limit: "0.5"
+grafana_memory_limit: "512m"
+grafana_cpu_limit: "0.5"
+alloy_memory_limit: "256m"
+alloy_cpu_limit: "0.25"
+alertmanager_memory_limit: "128m"
+alertmanager_cpu_limit: "0.25"
+node_exporter_memory_limit: "128m"
+node_exporter_cpu_limit: "0.25"
+cadvisor_memory_limit: "256m"
+cadvisor_cpu_limit: "0.5"

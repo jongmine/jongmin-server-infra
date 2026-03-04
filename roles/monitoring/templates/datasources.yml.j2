@@ -1,0 +1,91 @@
+---
+# Grafana Datasources Provisioning
+apiVersion: 1
+
+datasources:
+  # ============================================================================
+  # Admin Datasources (Full Access)
+  # ============================================================================
+
+  - name: Prometheus
+    uid: prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:{{ prometheus_port }}
+    isDefault: true
+    editable: false
+    jsonData:
+      timeInterval: 15s
+      queryTimeout: 60s
+      httpMethod: POST
+      exemplars:
+        - datasourceUid: tempo
+          internal: true
+      # Exemplars를 지원하는 Prometheus 버전(2.26+)임을 명시
+      enableExemplars: true
+
+  - name: Loki
+    uid: loki
+    type: loki
+    access: proxy
+    url: http://loki:{{ loki_port }}
+    editable: false
+    jsonData:
+      maxLines: 1000
+      httpHeaderName1: 'X-Scope-OrgID'
+      derivedFields:
+        - datasourceUid: tempo
+          matcherRegex: '"traceId":"(\w+)"'
+          name: TraceID
+          url: '$${__value.raw}'
+          urlDisplayLabel: 'View Trace'
+    secureJsonData:
+      httpHeaderValue1: 'infra'
+
+  - name: Tempo
+    uid: tempo
+    type: tempo
+    access: proxy
+    url: http://tempo:{{ tempo_port }}
+    editable: true
+    jsonData:
+      grpcEndpoint: tempo:9095
+      search:
+        hide: false
+      nodeGraph:
+        enabled: true
+      tracesToLogsV2:
+        datasourceUid: loki-sallang
+        spanStartTimeShift: '-1h'
+        spanEndTimeShift: '1h'
+        tags:
+          - key: 'service.name'
+            value: 'application'
+        filterByTraceID: true
+        filterBySpanID: false
+        customQuery: true
+        query: '{application="$${__span.tags.service_name}"} |= "$${__span.traceId}"'
+      serviceMap:
+        datasourceUid: prometheus
+
+  # ============================================================================
+  # Sallang Team Datasources (Restricted Access)
+  # ============================================================================
+
+  - name: Loki (Sallang)
+    uid: loki-sallang
+    type: loki
+    access: proxy
+    url: http://loki:{{ loki_port }}
+    editable: false
+    jsonData:
+      maxLines: 1000
+      httpHeaderName1: 'X-Scope-OrgID'
+      derivedFields:
+        - datasourceUid: tempo
+          matcherRegex: '"traceId":"(\w+)"'
+          name: TraceID
+          url: '$${__value.raw}'
+          urlDisplayLabel: 'View Trace'
+    secureJsonData:
+      httpHeaderValue1: 'sallang-backend'

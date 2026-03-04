@@ -74,12 +74,19 @@ graph TD
 │   │   └── handlers/         # 재시작 핸들러
 │   ├── homepage/             # Dashboard
 │   ├── tailscale/            # VPN
-│   └── ...
+│   ├── ddns/                 # Dynamic DNS 업데이트
+│   ├── fail2ban/             # 침입 차단 (Brute-force 방어)
+│   └── monitoring/           # Grafana / Prometheus / Loki / Tempo 스택
 ├── docs/                     # 📚 Documentation
-│   ├── CD_SCRIPT_GUIDE.md    # [중요] 서비스 배포 가이드
-│   ├── ACCOUNT_..._MGMT.md   # 계정 및 권한 관리
-│   ├── ANSIBLE_DOCKER_GUIDE.md # 인프라 vs 앱 관리 기준
-│   └── ...
+│   ├── CD_SCRIPT_GUIDE.md              # [중요] 서비스 배포 가이드
+│   ├── MONITORING_GUIDE.md             # 모니터링 스택 가이드
+│   ├── TROUBLESHOOTING.md              # 트러블슈팅 모음
+│   ├── ANSIBLE_DOCKER_GUIDE.md         # 인프라 vs 앱 관리 기준
+│   ├── ACCOUNT_AND_PERMISSION_MANAGEMENT.md # 계정 및 권한 관리
+│   ├── TRAEFIK_GUIDE.md                # 게이트웨이 상세 설정
+│   ├── HOMEPAGE_GUIDE.md               # 대시보드 커스터마이징
+│   ├── TAILSCALE_ACL_GUIDE.md          # VPN 접근 제어 정책
+│   └── PORTAINER_GUIDE.md              # 컨테이너 GUI 관리
 └── README.md                 # 이 파일
 ```
 
@@ -165,9 +172,10 @@ ansible-playbook -i inventory/hosts.yml playbooks/site.yml --check --ask-vault-p
 ### 1. 배포 및 운영 (For Developers & Agents)
 
 - [**서비스 배포 가이드 (CD Guide)**](docs/CD_SCRIPT_GUIDE.md): 새로운 서비스를 배포할 때 가장 먼저 읽어야 할 문서. 네트워크 구조와 CD 스크립트 템플릿을 제공합니다.
-- [**서버 유지보수 가이드 (Maintenance)**](docs/MAINTENANCE_GUIDE.md): 서버 종료, 램 증설 등 하드웨어 작업 시 안전한 셧다운 절차.
 - [**Docker 운영 전략**](docs/ANSIBLE_DOCKER_GUIDE.md): Ansible로 관리하는 것과 Portainer로 관리하는 것의 차이를 설명합니다.
 - [**Portainer 가이드**](docs/PORTAINER_GUIDE.md): GUI를 이용한 컨테이너 모니터링 및 임시 배포 방법.
+- [**모니터링 가이드**](docs/MONITORING_GUIDE.md): Grafana / Prometheus / Loki / Tempo 스택 운영 및 대시보드 가이드.
+- [**트러블슈팅 가이드**](docs/TROUBLESHOOTING.md): 자주 발생하는 문제 해결 방법 모음.
 
 ## 🛡️ 보안 정책 (Security Policy)
 
@@ -188,28 +196,15 @@ ansible-playbook -i inventory/hosts.yml playbooks/site.yml --check --ask-vault-p
 - **비공개 서비스**: 보안이 필요한 경우 Docker Label에 `traefik.http.routers.[name].middlewares=auth-jongmin@file`을 추가해야 합니다.
 - 상세 설정 방법은 [**서비스 배포 가이드**](docs/CD_SCRIPT_GUIDE.md)를 참고하세요.
 
-## 🔧 하드웨어 최적화
+## 🖥️ 서버 사양
 
-### CPU 전원 관리 (팬 소음 감소)
-
-AMD Ryzen 미니 PC 환경에서 팬 소음을 줄이기 위해 CPU 부스트를 비활성화합니다.
-
-- **문제**: CPU 부스트로 인한 급격한 온도 변화 (37°C ↔ 46°C)로 팬이 5초 주기로 폭주
-- **해결**: `cpu_power_management` role로 부스트 비활성화, 온도를 40°C대로 안정화
-- **효과**: 팬 소음 제거, 온도 안정화 (74°C → 40°C), 서버 성능 유지
-
-```bash
-# CPU 부스트 상태 확인
-cat /sys/devices/system/cpu/cpufreq/boost  # 0 = 비활성화
-
-# 서비스 상태 확인
-sudo systemctl status disable-cpu-boost.service
-
-# 온도 모니터링
-sensors
-```
-
-**비활성화 해제**: `inventory/group_vars/all/vars`에서 `cpu_boost_enabled: true`로 변경
+| 항목         | 값                                               |
+| ------------ | ------------------------------------------------ |
+| **CPU**      | AMD Ryzen 7 4700U with Radeon Graphics (8 cores) |
+| **메모리**   | 32GB RAM                                         |
+| **Swap**     | 4GB                                              |
+| **스토리지** | 512GB                                            |
+| **OS**       | Ubuntu 24.04.4 LTS                               |
 
 ## 🛠️ 시작하기 (Getting Started)
 
@@ -222,8 +217,3 @@ sensors
 ### 3. 보안 및 권한
 
 - [**계정 및 권한 관리**](docs/ACCOUNT_AND_PERMISSION_MANAGEMENT.md): `sallang-deploy` 등 서비스 계정의 역할과 Sudo 권한 상세.
-
-### 4. 기타
-
-- [**트러블슈팅**](docs/TROUBLESHOOTING.md): 자주 발생하는 문제 해결.
-- [**네트워크 장애 리포트**](docs/NETWORK_INCIDENT_REPORT_20260115.md): 과거 장애 이력.
