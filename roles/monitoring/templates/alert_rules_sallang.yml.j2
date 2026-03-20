@@ -46,7 +46,7 @@ groups:
       - alert: SallangHighMemoryUsage
         expr: |
           (
-            container_memory_usage_bytes{name=~".*sallang.*"}
+            container_memory_working_set_bytes{name=~".*sallang.*"}
             /
             container_spec_memory_limit_bytes{name=~".*sallang.*"}
           ) * 100 > 85
