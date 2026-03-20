@@ -49,6 +49,13 @@ loki.source.docker "containers" {
 loki.process "tenant_mapping" {
   forward_to = [loki.write.loki_endpoint.receiver]
 
+  // Loki retention(168h=7일)보다 오래된 로그 사전 드롭
+  // positions 파일 손실 시 재발 방지 (CPU 과부하 방어)
+  stage.drop {
+    older_than          = "168h"
+    drop_counter_reason = "too_old"
+  }
+
   stage.json {
     expressions = {
       application = "application",
