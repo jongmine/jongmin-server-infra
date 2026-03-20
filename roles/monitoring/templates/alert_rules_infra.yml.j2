@@ -72,7 +72,7 @@ groups:
         # > 0 필터: 메모리 제한이 설정된 컨테이너만 (무제한 컨테이너 제외)
         expr: |
           (
-            container_memory_usage_bytes{name!="", name!~"POD|k8s_.*"}
+            container_memory_working_set_bytes{name!="", name!~"POD|k8s_.*"}
             /
             container_spec_memory_limit_bytes{name!="", name!~"POD|k8s_.*"}
           ) * 100 > 90
