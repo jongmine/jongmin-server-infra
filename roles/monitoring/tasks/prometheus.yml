@@ -78,7 +78,7 @@
       - name: "{{ monitoring_network_name }}"
       - name: "{{ docker_network_name }}"  # 외부 인터넷 접근 (Slack 알림 발송)
     published_ports:
-      - "9093:9093"  # Tailscale VPN 경유 접근용
+      - "127.0.0.1:9093:9093"  # 로컬호스트 전용 (외부/Tailscale 직접 접근 차단)
     command:
       - "--config.file=/etc/alertmanager/config.yml"
       - "--storage.path=/alertmanager"
