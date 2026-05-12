@@ -20,6 +20,11 @@ prometheus_retention: "15d"
 loki_retention: "744h"
 tempo_retention: "168h"
 
+# Log ingestion safety
+# This is not Loki retention. It drops late/backfilled Docker log entries before
+# Loki ingestion so cursor drift cannot replay stale logs indefinitely.
+alloy_log_drop_older_than: "1h"
+
 # Internal Ports
 prometheus_port: 9090
 loki_port: 3100
