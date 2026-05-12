@@ -30,6 +30,50 @@
       - docker-compose-plugin
     state: present
 
+- name: Check Docker daemon config
+  stat:
+    path: /etc/docker/daemon.json
+  register: docker_daemon_json
+
+- name: Read existing Docker daemon config
+  slurp:
+    src: /etc/docker/daemon.json
+  register: docker_daemon_json_content
+  when: docker_daemon_json.stat.exists
+
+- name: Build Docker daemon config with log rotation
+  set_fact:
+    docker_daemon_config: >-
+      {{
+        (
+          (docker_daemon_json_content.content | b64decode | from_json)
+          if docker_daemon_json.stat.exists
+          else {}
+        )
+        | combine({
+            'log-driver': docker_log_driver,
+            'log-opts': (
+              (
+                ((docker_daemon_json_content.content | b64decode | from_json).get('log-opts', {}))
+                if docker_daemon_json.stat.exists
+                else {}
+              )
+              | combine({
+                  'max-size': docker_log_max_size,
+                  'max-file': docker_log_max_file
+                })
+            )
+          }, recursive=True)
+      }}
+
+- name: Configure Docker daemon log rotation
+  copy:
+    dest: /etc/docker/daemon.json
+    mode: '0644'
+    backup: true
+    content: "{{ docker_daemon_config | to_nice_json }}\n"
+  notify: Restart Docker
+
 - name: Add user to docker group
   user:
     name: "{{ ansible_user }}"
