@@ -4,6 +4,13 @@
 # Docker Network Name
 docker_network_name: "jongmin-net"
 
+# Docker daemon log rotation
+# Alloy reads Docker JSON logs. Bound file size so cursor drift cannot replay
+# unbounded historical logs into Loki.
+docker_log_driver: "json-file"
+docker_log_max_size: "50m"
+docker_log_max_file: "5"
+
 # Glances Settings
 glances_image: "nicolargo/glances:latest"
 glances_port: 61208
