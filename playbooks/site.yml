@@ -7,7 +7,9 @@
   roles:
     - common
     - cpu_power_management
-    - docker
+    - role: docker
+      tags:
+        - docker
     - traefik
     - ddns
     - fail2ban
