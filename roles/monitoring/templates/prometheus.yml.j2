@@ -68,6 +68,14 @@ scrape_configs:
           service: 'grafana'
           team: 'infra'
 
+  # Alloy metrics
+  - job_name: 'alloy'
+    static_configs:
+      - targets: ['alloy:{{ alloy_ui_port }}']
+        labels:
+          service: 'alloy'
+          team: 'infra'
+
   # Docker Service Discovery - scrape services with monitoring.scrape=true label
   - job_name: 'docker-services'
     docker_sd_configs:
