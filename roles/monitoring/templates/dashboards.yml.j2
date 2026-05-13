@@ -24,3 +24,14 @@ providers:
     options:
       path: /var/lib/grafana/dashboards/sallang
       foldersFromFilesStructure: true
+
+  - name: 'Debug'
+    orgId: 1
+    folder: 'Debug'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards/debug
+      foldersFromFilesStructure: true
