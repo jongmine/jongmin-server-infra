@@ -88,7 +88,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(count_over_time({container_name=~\".+\"} |= \"$search\" [$__interval]))",
+          "expr": "sum(count_over_time({container_name=\"$app\"} |= \"$search\" [$__interval]))",
           "legendFormat": "",
           "refId": "A"
         }
@@ -160,7 +160,7 @@
       },
       "targets": [
         {
-          "expr": "{container_name=~\".+\"} |= \"$search\" | logfmt",
+          "expr": "{container_name=\"$app\"} |= \"$search\"",
           "hide": false,
           "legendFormat": "",
           "refId": "A"
@@ -180,21 +180,20 @@
   "templating": {
     "list": [
       {
-        "allValue": ".+",
         "current": {
           "selected": true,
-          "text": "All",
-          "value": "$__all"
+          "text": "sallang-backend-dev",
+          "value": "sallang-backend-dev"
         },
         "datasource": "loki",
-        "definition": "label_values(job)",
+        "definition": "label_values(container_name)",
         "hide": 2,
-        "includeAll": true,
+        "includeAll": false,
         "label": "App",
         "multi": false,
         "name": "app",
         "options": [],
-        "query": "label_values(job)",
+        "query": "label_values(container_name)",
         "refresh": 1,
         "regex": "",
         "skipUrlSync": false,
