@@ -227,7 +227,7 @@ flowchart LR
 | Alert                         | 조건                           | 지속 |
 | ----------------------------- | ------------------------------ | ---- |
 | `SallangContainerDown`        | Sallang container absent       | 1m   |
-| `SallangHighErrorRate`        | 5xx ratio > 1%                 | 3m   |
+| `SallangHighErrorRate`        | dev backend를 제외한 5xx ratio > 1% | 3m   |
 | `SallangHighLatency`          | P99 latency > 2s               | 5m   |
 | `SallangMatchingQueueTooLong` | queue length > 1000            | 5m   |
 | `SallangHighMemoryUsage`      | Sallang container memory > 85% | 5m   |
@@ -237,6 +237,7 @@ flowchart LR
 - `SallangHighErrorRate`는 비율 기반이고 3분 지속 조건이 있습니다.
 - dev/QA처럼 트래픽이 적은 환경에서는 짧은 500 몇 건을 놓칠 수 있습니다.
 - dev에는 absolute count alert가 필요합니다.
+- dev backend의 단발 5xx는 `SallangDevAny5xx`가 담당하므로 `SallangHighErrorRate`에서는 `application="sallang-backend-dev"`를 제외합니다.
 
 예:
 
