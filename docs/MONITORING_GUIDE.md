@@ -2,6 +2,10 @@
 
 홈랩 서버에 구축된 **LGTM Stack** 기반 모니터링 시스템 안내입니다.
 
+> 상세 아키텍처와 현재 정책값은
+> [observability/monitoring-architecture-and-policy.md](./observability/monitoring-architecture-and-policy.md)를
+> 기준으로 확인하세요. 이 문서는 운영 절차 중심의 요약 가이드입니다.
+
 ---
 
 ## 목차
@@ -66,7 +70,7 @@ graph TB
     Grafana --- Prometheus & Loki & Tempo
     Prometheus -->|"Alert firing"| Alertmanager --> Slack
     NodeExporter & cAdvisor -->|"Pull :15s"| Prometheus
-    DockerSock -->|"docker logs 자동 수집"| Alloy -->|"stage.drop 168h 필터"| Loki
+    DockerSock -->|"docker logs 자동 수집"| Alloy -->|"stage.drop 1h 필터"| Loki
     SallangApp -->|"OTLP/gRPC"| Alloy --> Tempo
 ```
 
@@ -103,8 +107,11 @@ labels:
 ### Loki — 로그 집계
 
 - **방식**: Alloy가 Push. 로그 내용 대신 레이블만 인덱싱 (경량)
-- **보존**: 7일 (`reject_old_samples_max_age: 168h`)
+- **보존**: 31일 (`loki_retention: 744h`)
 - **Multi-Tenancy**: `compose_project` 라벨 기반 자동 분리
+
+> Loki 보존 기간은 Loki에 이미 저장된 로그의 수명입니다. Alloy의
+> `older_than` 필터는 저장 전에 늦게 들어온 로그를 버리는 ingest 정책입니다.
 
 | Tenant ID         | 포함 서비스                              |
 | ----------------- | ---------------------------------------- |
@@ -142,12 +149,13 @@ Docker 소켓 감시 → 로그 수집 → Loki Push, OTLP 수신 → Tempo 라�
 
 ```river
 stage.drop {
-  older_than          = "168h"   // Loki retention과 동일
+  older_than          = "1h"   // late/backfill 로그 ingest 방어
   drop_counter_reason = "too_old"
 }
 ```
 
 > positions 파일 손실 시 오래된 로그 재전송 → Loki 거부 → CPU 과부하 무한루프를 방어합니다.
+> 이 값은 Loki retention이 아니며, 현재 사후 분석성을 약화시키는 주요 검토 대상입니다.
 
 ---
 
@@ -163,7 +171,7 @@ flowchart LR
 
     subgraph Logs
         CTR["컨테이너 stdout/stderr"]
-        --> ALLOY["Alloy\n(stage.drop 168h)"]
+        --> ALLOY["Alloy\n(stage.drop 1h)"]
         --> LOKI["Loki\n(Tenant 분리)"] --> GF
     end
 
@@ -298,14 +306,15 @@ Loki 데이터소스의 `X-Scope-OrgID` 헤더 확인. sallang 팀 → `sallang-
 
 **Alloy CPU가 높음**
 `docker logs --since 10m loki 2>&1 | grep -c "timestamp too old"` 로 에러 확인.
-`stage.drop older_than=168h` 설정이 방어하고 있으며, positions 파일 손실 직후에는 일시적으로 높을 수 있습니다.
+`stage.drop older_than=1h` 설정이 방어하고 있으며, positions 파일 손실 직후에는 일시적으로 높을 수 있습니다.
 
 ---
 
 ## 관련 문서
 
 - [MIGRATION_STRATEGY.md](./MIGRATION_STRATEGY.md) — Oracle Cloud 이관 및 3-Node 아키텍처 전략
-- [ALERTMANAGER_POLICY.md](./ALERTMANAGER_POLICY.md) — 알림 정책 및 에스컬레이션 규칙
+- [observability/monitoring-architecture-and-policy.md](./observability/monitoring-architecture-and-policy.md) — 현재 모니터링 아키텍처와 정책값
+- [observability/backend-telemetry-contract.md](./observability/backend-telemetry-contract.md) — 장애 조사형 APM을 위한 backend 필수 telemetry field
 - [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) — 일반적인 문제 해결
 - [TAILSCALE_ACL_GUIDE.md](./TAILSCALE_ACL_GUIDE.md) — Tailscale VPN 설정
 - [TRAEFIK_GUIDE.md](./TRAEFIK_GUIDE.md) — Traefik 라우팅 설정
