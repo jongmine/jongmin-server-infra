@@ -227,7 +227,7 @@ Tailscale 연결 후 직접 접근 가능합니다.
 | 알림                        | 조건                                    | 지속 |
 | --------------------------- | --------------------------------------- | ---- |
 | SallangContainerDown        | 컨테이너 다운                           | 1m   |
-| SallangHighErrorRate        | 5xx 에러율 > 1%                         | 3m   |
+| SallangHighErrorRate        | dev backend를 제외한 5xx 에러율 > 1%    | 3m   |
 | SallangHighLatency          | P99 레이턴시 > 2초                      | 5m   |
 | SallangMatchingQueueTooLong | 대기열 길이 > 1000                      | 5m   |
 | SallangHighMemoryUsage      | `working_set_bytes` > 메모리 한도의 85% | 5m   |
