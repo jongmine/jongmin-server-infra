@@ -378,7 +378,7 @@
       "targets": [
         {
           "datasource": { "type": "loki", "uid": "loki-sallang" },
-          "expr": "{application=\"$application\"} |= \"ERROR\"",
+          "expr": "{application=\"$application\", level=\"ERROR\"}",
           "maxLines": 100,
           "refId": "A"
         }
