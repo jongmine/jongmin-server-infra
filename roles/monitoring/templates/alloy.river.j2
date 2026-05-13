@@ -59,12 +59,14 @@ loki.process "tenant_mapping" {
   stage.json {
     expressions = {
       application = "application",
+      level       = "level",
     }
   }
 
   stage.labels {
     values = {
       application = "application",
+      level       = "level",
     }
   }
 

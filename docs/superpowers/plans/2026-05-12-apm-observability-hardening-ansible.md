@@ -883,12 +883,13 @@ Backend 계측 요구사항은 `docs/observability/backend-telemetry-contract.md
 현재 관측:
 
 - backend JSON log에는 `level` field가 안정적으로 들어온다.
-- Loki stream label에도 `level="error"`가 관측됐다.
+- Loki stream label에는 backend JSON log의 `level` 값이 그대로 올라가므로 `level="ERROR"`처럼 대문자 값이 관측된다.
 - Prometheus `logback_events_total`의 `level` label도 소문자(`debug`, `error`, `info`, `trace`, `warn`)다.
-- 따라서 이 작업을 진행할 경우 dashboard LogQL은 `level="ERROR"`가 아니라 `level="error"` 기준으로 작성해야 한다.
+- 따라서 dashboard LogQL은 Loki label 기준인 `level="ERROR"`를 사용하고, Prometheus alert rule은 Micrometer metric label 기준인 `level="error"`를 사용한다.
 - 단, 현재 repo의 `alloy.river.j2`에는 아직 `level` label 설정이 명시되어 있지 않으므로, 실제 서버 설정과 Ansible 템플릿의 차이를 먼저 확인한 뒤 진행한다.
+- 실제 서버 `/etc/alloy/config.alloy`도 `application`만 label로 올리고 있음을 확인했다. `roles/monitoring/templates/alloy.river.j2`는 로컬 infra repo 경로에서 확인해야 하며, 서버 홈 디렉토리에는 해당 파일이 없다.
 
-- [ ] **단계 1: Alloy JSON parsing 확장**
+- [x] **단계 1: Alloy JSON parsing 확장**
 
 `roles/monitoring/templates/alloy.river.j2`의 `stage.json` 변경:
 
@@ -901,7 +902,7 @@ stage.json {
 }
 ```
 
-- [ ] **단계 2: `level`을 Loki label로 추가**
+- [x] **단계 2: `level`을 Loki label로 추가**
 
 `stage.labels` 변경:
 
@@ -922,7 +923,7 @@ stage.labels {
 - `requestId`
 - raw `uri`
 
-- [ ] **단계 3: APM error log query 변경**
+- [x] **단계 3: APM error log query 변경**
 
 `roles/monitoring/files/dashboards/sallang/apm-dashboard.json` 변경:
 
@@ -933,22 +934,30 @@ stage.labels {
 를 아래로 변경:
 
 ```logql
-{application="$application", level="error"}
+{application="$application", level="ERROR"}
 ```
 
-- [ ] **단계 4: dry-run**
+- [x] **단계 4: dry-run**
 
 ```bash
 ansible-playbook -i inventory/hosts.yml playbooks/site.yml --check --diff --tags monitoring-alloy,monitoring-grafana
 ```
 
-- [ ] **단계 5: backend format 확인 후 배포**
+- [x] **단계 5: backend format 확인 후 배포**
 
 ```bash
 ansible-playbook -i inventory/hosts.yml playbooks/site.yml --tags monitoring-alloy,monitoring-grafana
 ```
 
-- [ ] **단계 6: Loki label 확인**
+배포 후 확인:
+
+- Alloy config diff: `stage.json`과 `stage.labels`에 `level = "level"` 추가됨
+- 실제 서버 `/etc/alloy/config.alloy`에서 `level = "level"` 반영 확인됨
+- Loki label values에서 `DEBUG`, `ERROR`, `INFO`, `WARN` 확인됨
+- Grafana dashboard query는 `level="error"`로 배포되어 빈 결과가 나왔고, Loki label 값에 맞춰 `level="ERROR"`로 보정 필요
+- Grafana dashboard query를 `level="ERROR"`로 보정한 뒤 `Sallang APM > Recent ERROR Logs`에서 로그가 보임
+
+- [x] **단계 6: Loki label 확인**
 
 `jongmin-server`에서 실행:
 
@@ -961,6 +970,8 @@ docker exec loki sh -c 'wget -qO- --header="X-Scope-OrgID: sallang-backend" "htt
 ```text
 ERROR
 ```
+
+주의: 배포 전에 수집된 과거 로그에는 `level` label이 없을 수 있다. 배포 후 새 ERROR 로그를 발생시킨 뒤 `{application="sallang-backend-dev", level="ERROR"}`로 조회해야 한다.
 
 ---
 
