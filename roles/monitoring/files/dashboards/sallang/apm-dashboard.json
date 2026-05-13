@@ -379,6 +379,7 @@
         {
           "datasource": { "type": "loki", "uid": "loki-sallang" },
           "expr": "{application=\"$application\"} |= \"ERROR\"",
+          "maxLines": 100,
           "refId": "A"
         }
       ],

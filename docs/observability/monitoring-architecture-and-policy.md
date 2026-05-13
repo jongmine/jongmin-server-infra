@@ -9,6 +9,7 @@
 | 목적                         | 문서                                                                           |
 | ---------------------------- | ------------------------------------------------------------------------------ |
 | 현재 모니터링 구조/정책 이해 | 이 문서                                                                        |
+| Backend 계측 요구사항        | `docs/observability/backend-telemetry-contract.md`                             |
 | 실제 Ansible 구현 계획       | `docs/superpowers/plans/2026-05-12-apm-observability-hardening-ansible.md`     |
 | 초기 초안                    | `docs/superpowers/plans/2026-05-12-observability-policy-hardening.md` - 대체됨 |
 
@@ -131,6 +132,17 @@ Alloy older_than:
 
 이 설정은 Loki를 보호하는 안전장치이지만, 사후 분석성은 약화시킵니다.
 
+즉 Grafana에서 보이는지 여부는 두 단계로 나뉩니다.
+
+| 상황 | Grafana에서 보이나? | 이유 |
+| --- | --- | --- |
+| 로그가 이미 Loki에 저장됨 | 보임 | Loki retention이 끝날 때까지 Grafana가 Loki에서 조회 가능 |
+| 로그가 Docker 파일에는 있지만 Alloy가 아직 Loki로 못 보냄 | `older_than` 기준에 걸리면 안 보임 | Alloy가 Loki 전송 전에 drop |
+| Alloy가 정상적으로 실시간 tail 중인 로그 | 보임 | 생성 직후 Loki로 들어감 |
+| Alloy가 1시간 넘게 멈췄다가 재시작해 과거 Docker 로그를 backfill | 일부 안 보일 수 있음 | event timestamp가 1시간보다 오래된 로그는 drop |
+
+따라서 `1h`는 Grafana 조회 기간 제한이 아니라 **Loki에 아직 들어가지 못한 늦은 로그의 수집 허용 시간**입니다. 현재 값은 Grafana 쿼리 성능 문제를 해결하는 근본 처방이 아니라 Loki를 보호하기 위한 임시 안전장치에 가깝습니다. Grafana가 느린 문제는 dashboard query 폭을 줄이고 `maxLines`를 낮추는 방식으로 해결해야 합니다.
+
 ## 로그 흐름과 tenant mapping
 
 ```mermaid
@@ -229,7 +241,15 @@ flowchart LR
 예:
 
 ```promql
-increase(http_server_requests_seconds_count{status=~"5..", application="sallang-backend-dev"}[5m]) > 0
+(
+  increase(http_server_requests_seconds_count{status=~"5..", application="sallang-backend-dev"}[5m]) > 0
+)
+or
+(
+  http_server_requests_seconds_count{status=~"5..", application="sallang-backend-dev"} > 0
+  unless
+  http_server_requests_seconds_count{status=~"5..", application="sallang-backend-dev"} offset 5m
+)
 ```
 
 ## 현재 주요 리스크
@@ -263,7 +283,7 @@ increase(http_server_requests_seconds_count{status=~"5..", application="sallang-
 
 Open decision: Docker log rotation과 Alloy drop-rate monitoring을 배포하고 관측한 뒤 dev를 `1h`에서 `24h`로 완화할지 결정합니다.
 
-Backend 계측 요구사항은 `docs/observability/backend-telemetry-contract.md`에 정리할 예정입니다.
+Backend 계측 요구사항은 `docs/observability/backend-telemetry-contract.md`에 정리합니다.
 
 ## 후속 보류: Tempo metrics-generator
 

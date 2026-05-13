@@ -410,6 +410,10 @@ docker exec prometheus sh -c 'wget -qO- --post-data="query=sum by (reason) (rate
 - 수정: `roles/monitoring/templates/alloy.river.j2`
 - 수정: `docs/observability/monitoring-architecture-and-policy.md`
 
+중요: `older_than=1h`는 Grafana 조회 기간을 1시간으로 제한하는 설정이 아니다. 이미 Loki에 들어간 로그는 Loki retention 동안 조회된다. 다만 Alloy가 장애, 재시작, cursor drift 때문에 Docker 로그를 늦게 읽는 경우, event timestamp가 1시간보다 오래된 로그는 Loki에 들어가기 전에 버려진다. 따라서 `1h`는 장기적으로 이상적인 값이라기보다 현재 Loki/Grafana를 보호하기 위한 보수적인 안전장치다.
+
+Grafana가 느린 문제는 `older_than`으로 해결하지 않는다. Task 4에서 broad query와 `maxLines`를 줄여 해결한다. `older_than`은 Docker log rotation과 Alloy drop metric 관측이 준비된 뒤 `24h` 같은 값으로 완화할지 판단한다.
+
 - [x] **단계 1: Ansible default 추가**
 
 `roles/monitoring/defaults/main.yml`의 retention 설정 근처에 추가한다.
@@ -491,7 +495,7 @@ older_than          = "1h"
 - 수정: `roles/monitoring/files/dashboards/loki-dashboard.json`
 - 수정: `roles/monitoring/tasks/grafana_dashboards.yml`
 
-- [ ] **단계 1: Loki datasource `maxLines` 낮추기**
+- [x] **단계 1: Loki datasource `maxLines` 낮추기**
 
 `roles/monitoring/templates/datasources.yml.j2`의 `uid: loki`, `uid: loki-sallang` 양쪽 모두 변경:
 
@@ -500,7 +504,7 @@ jsonData:
   maxLines: 100
 ```
 
-- [ ] **단계 2: Sallang APM ERROR log panel 제한**
+- [x] **단계 2: Sallang APM ERROR log panel 제한**
 
 `roles/monitoring/files/dashboards/sallang/apm-dashboard.json`의 `Recent ERROR Logs` target에 `maxLines`를 추가한다.
 
@@ -513,7 +517,7 @@ jsonData:
 }
 ```
 
-- [ ] **단계 3: `Logs / App`을 기본 Infrastructure dashboard에서 제거**
+- [x] **단계 3: `Logs / App`을 기본 Infrastructure dashboard에서 제거**
 
 `roles/monitoring/tasks/grafana_dashboards.yml`의 Infrastructure dashboard 목록에서 `loki-dashboard.json` 제거:
 
@@ -524,7 +528,17 @@ jsonData:
     - traefik-v3.json
 ```
 
-- [ ] **단계 4: debug dashboard 디렉토리 추가**
+기존 서버에 이미 배포된 파일은 `with_items` 제거만으로 삭제되지 않으므로 별도 삭제 task도 추가한다.
+
+```yaml
+- name: Remove Logs / App dashboard from Infrastructure folder
+  file:
+    path: /etc/monitoring/grafana/data/dashboards/infrastructure/loki-dashboard.json
+    state: absent
+  notify: Restart Grafana
+```
+
+- [x] **단계 4: debug dashboard 디렉토리 추가**
 
 `Create Grafana dashboard directories` task에 추가:
 
@@ -532,7 +546,7 @@ jsonData:
     - /etc/monitoring/grafana/data/dashboards/debug
 ```
 
-- [ ] **단계 5: `Logs / App`을 debug dashboard로 배포**
+- [x] **단계 5: `Logs / App`을 debug dashboard로 배포**
 
 `roles/monitoring/tasks/grafana_dashboards.yml`에 task 추가:
 
@@ -549,7 +563,7 @@ jsonData:
   notify: Restart Grafana
 ```
 
-- [ ] **단계 6: Debug dashboard provider 추가**
+- [x] **단계 6: Debug dashboard provider 추가**
 
 `roles/monitoring/templates/dashboards.yml.j2`의 `providers:`에 Debug provider를 추가한다. debug directory만 만들고 provider를 추가하지 않으면 Grafana가 `dashboards/debug/loki-dashboard.json`을 읽지 못할 수 있다.
 
@@ -566,7 +580,7 @@ jsonData:
       foldersFromFilesStructure: true
 ```
 
-- [ ] **단계 7: Logs / App 기본 쿼리 좁히기**
+- [x] **단계 7: Logs / App 기본 쿼리 좁히기**
 
 `roles/monitoring/files/dashboards/loki-dashboard.json`의 main logs query 변경:
 
@@ -592,11 +606,11 @@ sum(count_over_time({container_name=~".+"} |= "$search" [$__interval]))
 sum(count_over_time({container_name="$app"} |= "$search" [$__interval]))
 ```
 
-- [ ] **단계 8: `$app` 기본값 안전화**
+- [x] **단계 8: `$app` 기본값 안전화**
 
 `loki-dashboard.json`의 `app` variable이 container name을 조회하고, `includeAll: false`이며, 기본값이 `sallang-backend-dev` 같은 구체 컨테이너인지 확인한다.
 
-- [ ] **단계 9: Grafana dry-run**
+- [x] **단계 9: Grafana dry-run**
 
 ```bash
 ansible-playbook -i inventory/hosts.yml playbooks/site.yml --check --diff --tags monitoring-grafana
@@ -610,13 +624,13 @@ dashboards.yml
 dashboards/debug/loki-dashboard.json
 ```
 
-- [ ] **단계 10: Grafana 배포**
+- [x] **단계 10: Grafana 배포**
 
 ```bash
 ansible-playbook -i inventory/hosts.yml playbooks/site.yml --tags monitoring-grafana
 ```
 
-- [ ] **단계 11: 넓은 쿼리 제거 확인**
+- [x] **단계 11: 넓은 쿼리 제거 확인**
 
 ```bash
 rg -n 'container_name=~"\\.\\+"' roles/monitoring/files/dashboards/loki-dashboard.json roles/monitoring/files/dashboards/sallang/apm-dashboard.json
@@ -624,7 +638,7 @@ rg -n 'container_name=~"\\.\\+"' roles/monitoring/files/dashboards/loki-dashboar
 
 예상: match 없음.
 
-- [ ] **단계 12: bounded Loki query 확인**
+- [x] **단계 12: bounded Loki query 확인**
 
 `jongmin-server`에서 실행:
 
@@ -652,13 +666,22 @@ HTTP 200
 **파일**
 - 수정: `roles/monitoring/templates/alert_rules_sallang.yml.j2`
 
-- [ ] **단계 1: dev 5xx absolute alert 추가**
+- [x] **단계 1: dev 5xx absolute alert 추가**
 
 `sallang_alerts` group에 추가:
 
 ```yaml
       - alert: SallangDevAny5xx
-        expr: increase(http_server_requests_seconds_count{status=~"5..", application="sallang-backend-dev"}[5m]) > 0
+        expr: |
+          (
+            increase(http_server_requests_seconds_count{status=~"5..", application="sallang-backend-dev"}[5m]) > 0
+          )
+          or
+          (
+            http_server_requests_seconds_count{status=~"5..", application="sallang-backend-dev"} > 0
+            unless
+            http_server_requests_seconds_count{status=~"5..", application="sallang-backend-dev"} offset 5m
+          )
         for: 0m
         labels:
           severity: warning
@@ -669,13 +692,13 @@ HTTP 200
           description: {% raw %}"Sallang dev returned one or more 5xx responses in the last 5 minutes (count: {{ $value | humanize }})"{% endraw %}
 ```
 
-- [ ] **단계 2: dev ERROR log metric alert 추가**
+- [x] **단계 2: dev ERROR log metric alert 추가**
 
 같은 group에 추가:
 
 ```yaml
       - alert: SallangDevHighErrorLogs
-        expr: increase(logback_events_total{level="ERROR", application="sallang-backend-dev"}[10m]) > 5
+        expr: increase(logback_events_total{level="error", application="sallang-backend-dev"}[10m]) > 5
         for: 0m
         labels:
           severity: warning
@@ -686,19 +709,19 @@ HTTP 200
           description: {% raw %}"Sallang dev emitted more than 5 ERROR logs in 10 minutes (count: {{ $value | humanize }})"{% endraw %}
 ```
 
-- [ ] **단계 3: Prometheus rule dry-run**
+- [x] **단계 3: Prometheus rule dry-run**
 
 ```bash
 ansible-playbook -i inventory/hosts.yml playbooks/site.yml --check --diff --tags monitoring-prometheus
 ```
 
-- [ ] **단계 4: 배포**
+- [x] **단계 4: 배포**
 
 ```bash
 ansible-playbook -i inventory/hosts.yml playbooks/site.yml --tags monitoring-prometheus
 ```
 
-- [ ] **단계 5: rule loaded 확인**
+- [x] **단계 5: rule loaded 확인**
 
 `jongmin-server`에서 실행:
 
@@ -713,7 +736,16 @@ SallangDevAny5xx
 SallangDevHighErrorLogs
 ```
 
-- [ ] **단계 6: source metric 존재 확인**
+배포 후 확인:
+
+- `SallangDevAny5xx` rule loaded, health `ok`
+- 신규 502 발생 후 `SallangDevAny5xx` state `firing`
+- `SallangDevHighErrorLogs` rule loaded, health `ok`
+- 신규 502 metric label 확인: `application="sallang-backend-dev"`, `environment="dev"`, `status="502"`, `uri="/api/v1/auth/login/google"`
+- 기존 `increase(...[5m])`만 사용하면 첫 5xx 시계열에서 0으로 평가될 수 있음을 확인했고, `offset 5m` 기반 신규 시계열 감지 조건으로 보완함
+- `logback_events_total`의 실제 `level` label은 소문자(`level="error"`)임을 확인하고 rule을 이에 맞춤
+
+- [x] **단계 6: source metric 존재 확인**
 
 ```bash
 docker exec prometheus sh -c 'wget -qO- --post-data="query=count(http_server_requests_seconds_count{application=\"sallang-backend-dev\"})" http://localhost:9090/api/v1/query; echo; wget -qO- --post-data="query=count(logback_events_total{application=\"sallang-backend-dev\"})" http://localhost:9090/api/v1/query'
@@ -730,7 +762,7 @@ docker exec prometheus sh -c 'wget -qO- --post-data="query=count(http_server_req
 - 수정: `docs/MONITORING_GUIDE.md`
 - 수정: `docs/observability/monitoring-architecture-and-policy.md`
 
-- [ ] **단계 1: backend contract 문서 생성**
+- [x] **단계 1: backend contract 문서 생성**
 
 `docs/observability/backend-telemetry-contract.md` 생성:
 
@@ -806,7 +838,7 @@ docker exec prometheus sh -c 'wget -qO- --post-data="query=count(http_server_req
 6. `service.version`으로 배포 영향 여부를 확인한다.
 ````
 
-- [ ] **단계 2: `docs/MONITORING_GUIDE.md`에서 링크**
+- [x] **단계 2: `docs/MONITORING_GUIDE.md`에서 링크**
 
 관련 문서 섹션에 추가:
 
@@ -814,13 +846,29 @@ docker exec prometheus sh -c 'wget -qO- --post-data="query=count(http_server_req
 - [observability/backend-telemetry-contract.md](./observability/backend-telemetry-contract.md) — 장애 조사형 APM을 위한 backend 필수 telemetry field
 ```
 
-- [ ] **단계 3: architecture policy에서 링크**
+- [x] **단계 3: architecture policy에서 링크**
 
 `docs/observability/monitoring-architecture-and-policy.md`에 추가:
 
 ```markdown
 Backend 계측 요구사항은 `docs/observability/backend-telemetry-contract.md`에 정리한다.
 ```
+
+- [x] **단계 4: backend dev 배포 후 runtime contract 확인**
+
+`jongmin-server`에서 실제 502를 발생시킨 뒤 확인:
+
+- Prometheus metric:
+  - `http_server_requests_seconds_count{application="sallang-backend-dev"}` non-empty
+  - `application="sallang-backend-dev"`, `environment="dev"` label 확인
+  - 신규 502에 대해 `status="502"`, `uri="/api/v1/auth/login/google"` 확인
+- Loki log:
+  - `{application="sallang-backend-dev"} |= "502" |= "exception.type"` 조회 성공
+  - `traceId`, `spanId`, `http.status_code`, `http.method`, `http.route`, `exception.type`, `exception.message` 확인
+  - `service="sallang-backend"`, `application="sallang-backend-dev"`, `env="dev"`, `version="87b3d4b"` 확인
+- Tempo trace:
+  - Loki의 `traceId`로 `/api/traces/<traceId>` 조회 성공
+  - `service.name="sallang-backend"`, `service.namespace="sallang"`, `deployment.environment="dev"`, `service.version="87b3d4b"` 확인
 
 ---
 
@@ -831,6 +879,14 @@ Backend 계측 요구사항은 `docs/observability/backend-telemetry-contract.md
 - 수정: `roles/monitoring/files/dashboards/sallang/apm-dashboard.json`
 
 이 task는 backend JSON log에 `level` field가 안정적으로 들어간 뒤 적용한다.
+
+현재 관측:
+
+- backend JSON log에는 `level` field가 안정적으로 들어온다.
+- Loki stream label에도 `level="error"`가 관측됐다.
+- Prometheus `logback_events_total`의 `level` label도 소문자(`debug`, `error`, `info`, `trace`, `warn`)다.
+- 따라서 이 작업을 진행할 경우 dashboard LogQL은 `level="ERROR"`가 아니라 `level="error"` 기준으로 작성해야 한다.
+- 단, 현재 repo의 `alloy.river.j2`에는 아직 `level` label 설정이 명시되어 있지 않으므로, 실제 서버 설정과 Ansible 템플릿의 차이를 먼저 확인한 뒤 진행한다.
 
 - [ ] **단계 1: Alloy JSON parsing 확장**
 
@@ -877,7 +933,7 @@ stage.labels {
 를 아래로 변경:
 
 ```logql
-{application="$application", level="ERROR"}
+{application="$application", level="error"}
 ```
 
 - [ ] **단계 4: dry-run**

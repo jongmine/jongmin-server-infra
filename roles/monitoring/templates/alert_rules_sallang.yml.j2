@@ -59,3 +59,34 @@ groups:
         annotations:
           summary: "Sallang container memory usage is high"
           description: {% raw %}"Sallang container is using more than 85% of its memory limit (current: {{ $value | humanize }}%)"{% endraw %}
+
+      - alert: SallangDevAny5xx
+        expr: |
+          (
+            increase(http_server_requests_seconds_count{status=~"5..", application="sallang-backend-dev"}[5m]) > 0
+          )
+          or
+          (
+            http_server_requests_seconds_count{status=~"5..", application="sallang-backend-dev"} > 0
+            unless
+            http_server_requests_seconds_count{status=~"5..", application="sallang-backend-dev"} offset 5m
+          )
+        for: 0m
+        labels:
+          severity: warning
+          team: sallang
+          environment: dev
+        annotations:
+          summary: "Sallang dev returned 5xx"
+          description: {% raw %}"Sallang dev returned one or more 5xx responses in the last 5 minutes (count: {{ $value | humanize }})"{% endraw %}
+
+      - alert: SallangDevHighErrorLogs
+        expr: increase(logback_events_total{level="error", application="sallang-backend-dev"}[10m]) > 5
+        for: 0m
+        labels:
+          severity: warning
+          team: sallang
+          environment: dev
+        annotations:
+          summary: "Sallang dev emitted ERROR logs"
+          description: {% raw %}"Sallang dev emitted more than 5 ERROR logs in 10 minutes (count: {{ $value | humanize }})"{% endraw %}
