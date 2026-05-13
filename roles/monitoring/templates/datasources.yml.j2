@@ -31,7 +31,7 @@ datasources:
     url: http://loki:{{ loki_port }}
     editable: false
     jsonData:
-      maxLines: 1000
+      maxLines: 100
       httpHeaderName1: 'X-Scope-OrgID'
       derivedFields:
         - datasourceUid: tempo
@@ -79,7 +79,7 @@ datasources:
     url: http://loki:{{ loki_port }}
     editable: false
     jsonData:
-      maxLines: 1000
+      maxLines: 100
       httpHeaderName1: 'X-Scope-OrgID'
       derivedFields:
         - datasourceUid: tempo
