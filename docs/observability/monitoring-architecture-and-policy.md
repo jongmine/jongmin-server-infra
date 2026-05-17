@@ -23,8 +23,8 @@
 | Loki retention / limits        | `roles/monitoring/templates/loki.yml.j2`, `roles/monitoring/defaults/main.yml`                                 |
 | Alloy 로그/트레이스 파이프라인 | `roles/monitoring/templates/alloy.river.j2`                                                                    |
 | Grafana datasource             | `roles/monitoring/templates/datasources.yml.j2`                                                                |
-| Tempo retention                | `roles/monitoring/templates/tempo.yml.j2`, `roles/monitoring/defaults/main.yml`                                |
-| Docker log rotation            | 현재 repo에서 설정하지 않음. 실제 컨테이너는 Docker `json-file` + 빈 log option 상태                           |
+| Tempo retention / metrics-generator | `roles/monitoring/templates/tempo.yml.j2`, `roles/monitoring/defaults/main.yml`                           |
+| Docker log rotation            | `roles/docker/defaults/main.yml`, `roles/docker/tasks/main.yml`                                                |
 
 ## 실제 서버 팩트체크
 
@@ -37,13 +37,14 @@
 | Alloy live 주석            | 값은 `1h`인데 주변 주석은 아직 `168h`라고 되어 있음                                                                           | 문서/주석 드리프트  |
 | Loki retention             | `/etc/monitoring/loki/config.yml`에 `retention_period: 744h`, compactor retention enabled                                     | 확인됨              |
 | Tempo retention            | `/etc/monitoring/tempo/config.yml`에 `block_retention: 168h`                                                                  | 확인됨              |
+| Tempo metrics-generator    | `service-graphs`, `span-metrics`, `local-blocks` 활성화. `traces_spanmetrics_calls_total`, `traces_service_graph_request_total` 생성 확인 | 확인됨              |
 | Prometheus retention       | `--storage.tsdb.retention.time=15d`                                                                                           | 확인됨              |
 | Sallang metric label       | `sallang-backend-dev`가 `team="sallang"`, `compose_project="sallang-backend"`, `application="sallang-backend-dev"`로 scrape됨 | 확인됨              |
 | Loki tenant label          | tenant `sallang-backend`에 `sallang-backend-dev`, `sallang-postgres-dev`, `sallang-redis-dev` 존재                            | 확인됨              |
 | `logback_events_total`     | Prometheus에 `application="sallang-backend-dev"` 기준으로 존재                                                                | 확인됨              |
 | Alloy drop metric          | Alloy `/metrics`에 `loki_process_dropped_lines_total{reason="too_old"}` 존재                                                  | 확인됨              |
-| Prometheus의 Alloy scrape  | live Prometheus config에 `alloy` job 없음                                                                                     | 미구현              |
-| Docker log rotation        | live container들이 `json-file` + empty `LogConfig.Config` 사용. `max-size`, `max-file` 없음                                   | 미구현              |
+| Prometheus의 Alloy scrape  | Prometheus `alloy` target health `up`                                                                                         | 확인됨              |
+| Docker log rotation        | Docker daemon `json-file`, 컨테이너 `max-size=50m`, `max-file=5` 상속                                                         | 확인됨              |
 | Grafana Loki derived field | `Loki`, `Loki (Sallang)` 모두 `"traceId":"(\w+)"` regex로 Tempo link 설정                                                     | 확인됨, 포맷 의존적 |
 
 ## 전체 구조
@@ -111,8 +112,9 @@ flowchart LR
 | Loki retention                 | `744h`                                  | Loki에 이미 저장된 로그를 약 31일 보관                                       |
 | Alloy stale log pre-drop       | `older_than = "1h"`                     | 수집 시점 기준 event timestamp가 1시간보다 오래된 로그를 Loki 전송 전에 drop |
 | Tempo retention                | `168h`                                  | trace 7일 보관                                                               |
+| Tempo metrics-generator        | `service-graphs`, `span-metrics`, `local-blocks` | trace에서 service graph, span RED metric, TraceQL metrics 기반 생성. 배포 전 live 서버는 아직 비활성일 수 있음 |
 | Grafana Loki `maxLines`        | `1000`                                  | Grafana가 Loki에서 기본 최대 1000 log row 요청                               |
-| Docker log driver              | `json-file`, `max-size`/`max-file` 없음 | live 컨테이너 Docker JSON 로그 파일 크기 제한 없음                           |
+| Docker log driver              | `json-file`, `max-size=50m`, `max-file=5` | repo 목표값. live 컨테이너는 Docker log rotation 배포/recreate 전까지 빈 log option일 수 있음 |
 | Alloy metrics scrape           | Prometheus가 scrape하지 않음            | Alloy에는 metric이 있지만 Prometheus에서 장기 관측 불가                      |
 | Alert grouping                 | `group_by: alertname, team`             | alertname/team 기준 묶음 발송                                                |
 | First alert wait               | `30s`                                   | 첫 알림 전 30초 대기                                                         |
@@ -280,15 +282,15 @@ or
 6. dev 5xx / ERROR absolute alert를 추가합니다.
 7. APM dashboard를 장애 조사 cockpit으로 정리합니다.
 8. backend telemetry contract를 문서화합니다.
-9. Tempo metrics-generator / service graph는 별도 후속 계획으로 진행합니다.
+9. Tempo metrics-generator / service graph는 backend trace contract 확인 후 활성화합니다.
 
 Open decision: Docker log rotation과 Alloy drop-rate monitoring을 배포하고 관측한 뒤 dev를 `1h`에서 `24h`로 완화할지 결정합니다.
 
 Backend 계측 요구사항은 `docs/observability/backend-telemetry-contract.md`에 정리합니다.
 
-## 후속 보류: Tempo metrics-generator
+## Tempo metrics-generator 확장 정책
 
-현재 Tempo는 trace를 저장하지만 span metrics나 service graph를 생성하지 않습니다.
+Tempo는 trace 원본 저장뿐 아니라 trace에서 Prometheus metric을 생성하도록 확장합니다.
 
 Tempo metrics-generator는 Tempo에 들어온 trace/span을 집계해 Prometheus가 볼 수 있는 metric과 service graph를 만드는 기능입니다.
 
@@ -296,7 +298,8 @@ Tempo metrics-generator는 Tempo에 들어온 trace/span을 집계해 Prometheus
 
 - trace 원본은 Tempo에 저장됩니다.
 - traceId를 알면 Grafana에서 개별 trace를 열 수 있습니다.
-- 하지만 trace 기반 service graph, span latency metric, error span metric, exemplar 연결은 충분하지 않습니다.
+- backend telemetry contract가 배포되어 `service.name=sallang-backend`, `deployment.environment=dev`, `service.version=<git sha>`가 확인됐습니다.
+- repo 설정은 Tempo metrics-generator를 활성화해 service graph, span RED metric, TraceQL metrics 기반을 만들도록 변경합니다.
 
 metrics-generator를 켜면 기대할 수 있는 것:
 
@@ -304,24 +307,51 @@ metrics-generator를 켜면 기대할 수 있는 것:
 - service 간 호출 관계 그래프
 - span latency / error count metric
 - endpoint나 downstream dependency 기준의 병목 파악
+- TraceQL metrics 기반의 trace 집계
 
-바로 켜지 않는 이유:
+활성 processor:
 
-- backend의 `service.name`, `deployment.environment`, `service.version`이 먼저 안정화되어야 합니다.
-- DB/Redis/external HTTP/exception span이 충분히 나와야 service graph가 의미 있습니다.
-- span 이름이나 attribute가 불안정하면 Prometheus metric cardinality가 증가할 수 있습니다.
-- 현재 우선순위는 로그 손실 관측, Docker replay 방어, Grafana query 안정화입니다.
+- `service-graphs`: span parent-child 관계와 peer attribute로 service 간 edge를 생성합니다.
+- `span-metrics`: span request/error/duration metric을 생성합니다.
+- `local-blocks`: TraceQL metrics API가 사용할 local block을 생성합니다. 현재 Tempo `2.5.0` 문서에 맞춰 `filter_server_spans: false`와 `traces_storage.path`를 설정합니다.
 
-목표 기능:
+Prometheus remote write:
 
-- metric spike에서 exemplar trace로 이동
-- service graph
-- span latency / error metrics
+- Tempo metrics-generator는 `http://prometheus:9090/api/v1/write`로 metric을 씁니다.
+- Prometheus는 `--web.enable-remote-write-receiver`를 켜서 Tempo가 쓰는 remote write를 받습니다.
+- Prometheus는 이미 exemplar storage가 활성화되어 있으므로 generated metric에서 trace exemplar 연결을 기대할 수 있습니다.
 
-선행 조건:
+label 정책:
 
-- `service.name`, `service.version`, `deployment.environment` 표준화
-- DB, Redis, 외부 HTTP, exception event span 계측
-- 새 metric cardinality 검토
+- 추가 dimension은 `deployment.environment`, `service.version`, `http.method`, `http.route`, `http.status_code`, `db.system`, `db.name`, `peer.service` 수준으로 제한합니다.
+- raw URL, query string, token, user id, traceId, spanId는 metric label로 올리지 않습니다.
+- `status_message`는 high-cardinality 위험이 크므로 span metric intrinsic dimension에서 비활성으로 둡니다.
 
-따라서 이 작업은 첫 번째 안전화 작업이 끝난 뒤 별도 계획으로 진행합니다.
+리소스 정책:
+
+- 서버 리소스가 충분하므로 Prometheus는 `2g/1.5 CPU`, Tempo는 `1g/1.0 CPU`로 상향합니다.
+- `max_active_series: 100000`을 둬서 실수로 cardinality가 폭증할 때 제한 지표로 감지합니다.
+
+운영 감시 지표:
+
+```promql
+count(traces_spanmetrics_calls_total)
+count(traces_spanmetrics_latency_bucket)
+count(traces_service_graph_request_total)
+tempo_metrics_generator_registry_series_limited_total
+tempo_metrics_generator_processor_service_graphs_dropped_spans
+tempo_metrics_generator_processor_service_graphs_expired_edges
+```
+
+rollback 기준:
+
+- `tempo_metrics_generator_registry_series_limited_total`이 증가합니다.
+- Prometheus 또는 Tempo memory가 새 steady state에서 비정상적으로 증가합니다.
+- Tempo query, Grafana service graph, Sallang APM dashboard가 체감 가능하게 느려집니다.
+- service graph/metric label에 raw URL, UUID, token류 값이 보입니다.
+
+rollback 방법:
+
+1. `roles/monitoring/templates/tempo.yml.j2`에서 `overrides.defaults.metrics_generator.processors`를 `[]`로 되돌립니다.
+2. `ansible-playbook -i inventory/hosts.yml playbooks/site.yml --tags monitoring-tempo`를 적용합니다.
+3. 필요하면 Prometheus remote write receiver flag는 남겨둡니다. receiver만 켜진 상태는 Tempo가 쓰지 않으면 실질 부하가 없습니다.
