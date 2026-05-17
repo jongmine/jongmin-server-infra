@@ -2,9 +2,9 @@
 
 > **agentic worker용:** 이 계획을 실행할 때는 `superpowers:subagent-driven-development` 또는 `superpowers:executing-plans`를 사용해 task 단위로 진행한다. 각 단계는 체크박스(`- [ ]`)로 추적한다.
 
-**목표:** 현재 LGTM 스택을 장애 조사에 더 믿고 쓸 수 있게 만든다. Grafana 로그 쿼리 폭발을 줄이고, 로그 손실을 관측 가능하게 만들고, Docker 로그 replay 위험을 제한하고, dev 장애 알림을 보강하고, Datadog식 APM에 필요한 backend telemetry contract를 문서화한다.
+**목표:** 현재 LGTM 스택을 장애 조사에 더 믿고 쓸 수 있게 만든다. Grafana 로그 쿼리 폭발을 줄이고, 로그 손실을 관측 가능하게 만들고, Docker 로그 replay 위험을 제한하고, dev 장애 알림을 보강하고, trace 기반 service graph/span metrics까지 활성화한다.
 
-**아키텍처:** 기존 단일 노드 Ansible 기반 Prometheus/Loki/Tempo/Grafana/Alloy 구조는 유지한다. 먼저 위험이 낮은 안전장치부터 적용한다: Alloy metrics scrape, Docker JSON log rotation, Loki datasource/panel 반환량 제한, Logs / App debug 격리, dev absolute alert, backend 계측 계약. `older_than` 완화나 Tempo service graph는 drop rate와 replay 압력을 볼 수 있게 된 뒤 진행한다.
+**아키텍처:** 기존 단일 노드 Ansible 기반 Prometheus/Loki/Tempo/Grafana/Alloy 구조는 유지한다. 먼저 위험이 낮은 안전장치부터 적용한다: Alloy metrics scrape, Docker JSON log rotation, Loki datasource/panel 반환량 제한, Logs / App debug 격리, dev absolute alert, backend 계측 계약. Backend trace contract가 배포된 뒤 Tempo metrics-generator를 켜서 service graph, span RED metric, TraceQL metrics 기반을 만든다.
 
 **기술 스택:** Ansible roles, Docker Engine, Grafana Alloy River config, Prometheus alert rules, Loki, Tempo, Grafana provisioning JSON/YAML, Markdown runbook.
 
@@ -31,11 +31,11 @@
 | dev 5xx / ERROR alert | 분리 가능 | Prometheus rule만 추가. 다만 알림 노이즈가 생길 수 있음 | source metric 존재 확인 후 적용 |
 | Backend telemetry contract | 분리 가능 | 문서 변경만 수행 | backend 구현 전 공유용으로 먼저 merge 가능 |
 | Alloy `level` label 추가 | **backend 배포와 맞춰야 함** | backend JSON 로그에 `level`이 안정적으로 없으면 label이 비거나 쿼리가 깨질 수 있음 | backend 로그 포맷 배포/확인 후 적용 |
-| Tempo metrics-generator | **이번 계획에서 배포 금지** | 새 span metric/service graph 생성으로 cardinality와 저장량이 늘 수 있음 | 별도 계획과 baseline 측정 후 진행 |
+| Tempo metrics-generator | **Prometheus/Tempo/Grafana 묶어서 배포** | Tempo가 Prometheus remote write로 trace-derived metric을 쓰고 Grafana Tempo datasource가 Prometheus serviceMap을 사용함 | backend trace contract 확인 후 `monitoring-prometheus,monitoring-tempo,monitoring-grafana`를 함께 적용 |
 
 `older_than`을 `1h`에서 `24h`로 완화하는 작업은 이 문서의 일반 작업이 아니라 릴리스 게이트 통과 후 별도 변경으로 처리한다.
 
-현재 `ansible-playbook --list-tags` 기준으로 `docker` 태그가 노출되지 않는다. 따라서 Docker log rotation을 실제로 `--tags docker`로 적용하려면 먼저 `playbooks/site.yml`의 docker role에 tag를 추가해야 한다.
+현재 `ansible-playbook --list-tags` 기준으로 `docker` 태그가 노출된다. Docker log rotation은 `--tags docker`로 적용하되, Docker role 전체가 실행되므로 dry-run diff를 먼저 확인한다.
 
 ## 범위
 
@@ -69,9 +69,34 @@ Backend가 먼저 완료되어야만 적용할 수 있는 것:
 | 2 | Infra | backend telemetry contract 문서 작성 | 필요 없음 |
 | 3 | Backend | JSON log field, trace/span/resource attribute, ERROR 기준 정리 | 필요 |
 | 4 | Infra | backend 출력 확인 후 Alloy `level` label, dashboard trace/log 연동 보강 | backend 완료 후 |
-| 5 | Infra + Backend | Tempo metrics-generator/service graph 검토 | backend span 품질 확인 후 |
+| 5 | Infra | Tempo metrics-generator/service graph 활성화 | backend span 품질 확인 후 |
 
 Backend 작업은 인프라 1차 안정화를 기다릴 필요 없이 바로 시작해도 된다. 다만 인프라가 contract를 먼저 문서화해야 backend가 어떤 필드를 맞춰야 하는지 흔들리지 않는다.
+
+## 현재 진행 상태와 남은 일
+
+2026-05-14 KST 기준:
+
+완료/배포됨:
+
+- Task 1: Docker daemon 기본 log rotation 설정이 배포됐다. 기존 long-running container도 recreate되어 `max-size=50m`, `max-file=5`를 상속했다.
+- Task 2: Prometheus가 Alloy metrics를 scrape한다.
+- Task 3: Alloy stale log drop window가 변수화됐고, 운영 config에 `older_than = "1h"`가 반영됐다.
+- Task 4: Grafana/Loki 쿼리 폭발을 줄이기 위해 datasource `maxLines`, Logs / App debug 격리, bounded query가 배포됐다.
+- Task 5: dev 5xx / ERROR alert가 배포됐다. dev backend 5xx는 `SallangDevAny5xx`가 담당하고, `SallangHighErrorRate`는 dev backend를 제외한다.
+- Task 6: backend telemetry contract가 문서화됐고, backend dev 배포 후 Prometheus/Loki/Tempo runtime contract가 확인됐다.
+- Task 7: Alloy가 backend JSON `level`을 Loki label로 올리고, Sallang APM Recent ERROR Logs가 `{application="$application", level="ERROR"}`로 조회한다.
+- Task 8: Tempo metrics-generator가 배포됐고, `traces_spanmetrics_calls_total`, `traces_service_graph_request_total` 생성이 확인됐다. `tempo_metrics_generator_registry_series_limited_total=0`으로 cardinality 제한도 걸리지 않았다. Grafana datasource 편의 설정도 배포되어 exemplar `traceID`에서 Tempo waterfall로 이동 가능하다.
+- Task 9: 최종 검증 runbook은 `docs/MONITORING_GUIDE.md`에 추가됐다.
+
+아직 해야 함:
+
+- 없음. 남은 항목은 아래 후속 개선으로 분리한다.
+
+보류/후속 개선:
+
+- `Sallang APM > Recent ERROR Logs`는 현재 원문 JSON 로그를 그대로 보여준다. stack trace가 긴 ERROR는 읽기 어렵지만, 원본 보존과 장애 상세 조사에는 유리하다. 대시보드에서는 요약 패널을 별도로 추가하고, 전체 stack trace는 Explore에서 보는 방식으로 개선하는 것을 후속 작업으로 둔다.
+- `older_than=1h`를 `24h`로 완화하는 작업은 Docker log rotation, Alloy drop metric 관측, Loki 부하 안정성 확인 후 별도 변경으로 처리한다.
 
 ## 수정/생성 파일
 
@@ -127,7 +152,7 @@ Ansible 수정이 올바른지는 최종적으로 실제 서버에 적용해 봐
 | 4 | Docker log rotation | Docker daemon restart 가능, 컨테이너 recreate 필요할 수 있음 | `docker info`, `docker inspect`에서 log option 확인, 핵심 컨테이너 정상 | daemon.json rollback, Docker restart, 필요 시 컨테이너 재기동 |
 | 5 | backend telemetry contract | 문서만 변경 | backend 팀이 구현 기준으로 사용 가능 | 문서 수정 |
 | 6 | `older_than` 완화 | Alloy 로그 drop 정책 변경 | drop metric과 Loki ingest가 안정적 | 즉시 `1h`로 rollback |
-| 7 | Tempo metrics-generator | 이번 계획에서는 하지 않음 | 별도 baseline 후 판단 | 별도 rollback 계획 필요 |
+| 7 | Tempo metrics-generator | Prometheus/Tempo 재시작, Grafana datasource는 이미 serviceMap 연결됨 | trace-derived metric 생성, Service Graph 표시, generator 제한 지표 증가 없음 | `processors: []`로 rollback 후 `monitoring-tempo` 재적용 |
 
 ### 명령 흐름
 
@@ -180,7 +205,7 @@ docker inspect alloy prometheus loki grafana --format '{{.Name}} {{json .HostCon
 - 수정: `roles/docker/tasks/main.yml`
 - 생성: `roles/docker/handlers/main.yml`
 
-- [ ] **단계 1: Docker role tag 추가**
+- [x] **단계 1: Docker role tag 추가**
 
 현재 `--list-tags`에 `docker`가 나오지 않으므로 `playbooks/site.yml`의 docker role을 tag가 있는 role 선언으로 바꾼다.
 
@@ -205,7 +230,7 @@ ansible-playbook -i inventory/hosts.yml playbooks/site.yml --list-tags
 TASK TAGS: [..., docker, ...]
 ```
 
-- [ ] **단계 2: Docker logging 기본값 추가**
+- [x] **단계 2: Docker logging 기본값 추가**
 
 `roles/docker/defaults/main.yml`에 추가한다.
 
@@ -218,7 +243,7 @@ docker_log_max_size: "50m"
 docker_log_max_file: "5"
 ```
 
-- [ ] **단계 3: Docker restart handler 추가**
+- [x] **단계 3: Docker restart handler 추가**
 
 `roles/docker/handlers/main.yml` 생성:
 
@@ -230,7 +255,7 @@ docker_log_max_file: "5"
     state: restarted
 ```
 
-- [ ] **단계 4: Docker daemon 설정 task 추가**
+- [x] **단계 4: Docker daemon 설정 task 추가**
 
 `roles/docker/tasks/main.yml`에서 Docker package 설치 이후, `Enable and start Docker service` 이전에 추가한다.
 
@@ -282,7 +307,7 @@ docker_log_max_file: "5"
   notify: Restart Docker
 ```
 
-- [ ] **단계 5: syntax check**
+- [x] **단계 5: syntax check**
 
 ```bash
 ansible-playbook -i inventory/hosts.yml playbooks/site.yml --syntax-check
@@ -312,7 +337,7 @@ diff에 log rotation 외 기존 daemon 설정 삭제가 보이면 배포하지 �
 
 실제 배포 시 `backup: true`로 `/etc/docker/daemon.json` 변경 전 파일이 남아야 한다. rollback이 필요하면 백업 파일을 복원한 뒤 Docker를 재시작한다.
 
-- [ ] **단계 7: maintenance window에 배포**
+- [x] **단계 7: maintenance window에 배포**
 
 Docker restart가 발생할 수 있으므로 운영 영향이 적은 시간에 실행한다.
 
@@ -338,6 +363,19 @@ LoggingDriver=json-file
 ```
 
 기존 long-running container는 recreate 전까지 빈 `LogConfig.Config`를 유지할 수 있다. 필요한 경우 별도 maintenance step에서 recreate한다.
+
+2026-05-17 KST 확인:
+
+```text
+docker info -> LoggingDriver=json-file
+docker inspect alloy prometheus loki grafana sallang-backend-dev -> Config={}
+```
+
+판정:
+
+- Docker daemon 기본 log driver 배포는 완료.
+- 기존 컨테이너는 restart만 되었고 recreate되지 않아 log rotation option을 아직 상속하지 않음.
+- 컨테이너 recreate 후 `Config={"max-file":"5","max-size":"50m"}` 확인이 남음.
 
 ---
 
@@ -975,71 +1013,152 @@ ERROR
 
 ---
 
-## 작업 8: Tempo metrics-generator는 즉시 켜지 않고 설계만 문서화
+## 작업 8: Tempo metrics-generator 활성화
 
 **파일**
+- 수정: `roles/monitoring/defaults/main.yml`
+- 수정: `roles/monitoring/tasks/prometheus.yml`
+- 수정: `roles/monitoring/templates/tempo.yml.j2`
 - 수정: `docs/observability/monitoring-architecture-and-policy.md`
+- 수정: `docs/MONITORING_GUIDE.md`
 
-현재 Tempo는 trace 저장은 하지만 span metrics/service graph를 생성하지 않는다.
+서버 가용 리소스가 충분하고 목표가 서비스 병목 분석이므로 Tempo metrics-generator를 활성화한다.
 
-Tempo metrics-generator는 Tempo에 들어온 trace/span 데이터를 바탕으로 Prometheus가 볼 수 있는 metric을 만들어내는 기능이다. 지금은 trace를 열어야만 개별 요청을 볼 수 있는데, metrics-generator를 켜면 trace 데이터에서 아래 같은 집계가 생긴다.
+Tempo metrics-generator는 Tempo에 들어온 trace/span 데이터를 바탕으로 Prometheus가 볼 수 있는 metric을 만들어낸다. 지금은 trace를 열어야만 개별 요청을 볼 수 있는데, metrics-generator를 켜면 trace 데이터에서 아래 집계가 생긴다.
 
 - service 간 호출 관계
 - span latency histogram
 - span/error count
 - metric point에서 exemplar trace로 이동할 수 있는 연결 정보
+- TraceQL metrics용 local blocks
 
 쉽게 말하면 현재 Tempo는 “요청 녹화본 보관소”에 가깝고, metrics-generator를 켜면 “녹화본을 분석해서 서비스 지도와 지연/에러 통계를 만드는 작업자”가 추가된다.
 
-첫 번째 안정화 작업에서는 켜지 않는다. 이유:
+- [x] **단계 1: Prometheus remote write receiver 활성화**
 
-- metric cardinality가 증가할 수 있음
-- backend resource attribute가 아직 표준화되지 않음
-- DB/Redis/external HTTP/exception span 품질 확인이 먼저 필요함
-- 잘못 켜면 의미 없는 service graph나 과도한 span metric이 생길 수 있음
+`roles/monitoring/tasks/prometheus.yml`의 Prometheus command에 추가한다.
 
-- [ ] **단계 1: 보류 설계 추가**
-
-`docs/observability/monitoring-architecture-and-policy.md`에 추가:
-
-```markdown
-## 후속 보류: Tempo metrics-generator
-
-현재 Tempo는 trace를 저장하지만 span metrics나 service graph를 생성하지 않는다.
-
-Tempo metrics-generator는 Tempo에 들어온 span을 집계해서 Prometheus metric과 service graph를 만드는 기능이다.
-
-현재 상태:
-
-- trace 원본은 Tempo에 저장됨.
-- Grafana에서 traceId를 알면 개별 trace 조회 가능.
-- 하지만 trace 기반 service graph, span latency metric, exemplar 연결은 충분하지 않음.
-
-목표 기능:
-
-- metric spike에서 exemplar trace로 이동
-- service graph
-- span latency / error metrics
-
-왜 바로 켜지 않는가:
-
-- backend의 `service.name`, `deployment.environment`, `service.version`이 먼저 안정화되어야 함.
-- DB/Redis/external HTTP/exception span이 충분히 나와야 service graph가 의미 있음.
-- span 이름이나 attribute가 불안정하면 Prometheus metric cardinality가 증가할 수 있음.
-
-선행 조건:
-
-- `service.name`, `service.version`, `deployment.environment` 표준화
-- DB, Redis, 외부 HTTP, exception event span 계측
-- 새 metric cardinality 검토
-
-별도 계획에서 할 일:
-
-- Tempo metrics-generator processor 후보 정의
-- Prometheus remote write 또는 scrape 경로 확인
-- 생성 metric 이름과 label cardinality 검토
-- Grafana service graph / exemplar 동작 검증
+```yaml
+      - "--web.enable-remote-write-receiver"
 ```
+
+- [x] **단계 2: Tempo metrics-generator processor와 remote_write 활성화**
+
+`roles/monitoring/templates/tempo.yml.j2`의 `metrics_generator`에 아래 정책을 반영한다.
+
+```yaml
+metrics_generator:
+  processor:
+    service_graphs:
+      dimensions:
+        - deployment.environment
+        - http.method
+      enable_virtual_node_label: true
+    span_metrics:
+      dimensions:
+        - deployment.environment
+        - service.version
+        - http.method
+        - http.route
+        - http.status_code
+        - db.system
+        - db.name
+        - peer.service
+      intrinsic_dimensions:
+        service: true
+        span_name: true
+        span_kind: true
+        status_code: true
+        status_message: false
+      enable_target_info: true
+    local_blocks:
+      filter_server_spans: false
+  traces_storage:
+    path: /var/lib/tempo/generator/traces
+  storage:
+    remote_write_add_org_id_header: false
+    remote_write:
+      - url: http://prometheus:{{ prometheus_port }}/api/v1/write
+        send_exemplars: true
+```
+
+`overrides.defaults.metrics_generator.processors`는 아래처럼 켠다.
+
+```yaml
+processors:
+  - service-graphs
+  - span-metrics
+  - local-blocks
+```
+
+- [x] **단계 3: Prometheus/Tempo 리소스 상향**
+
+`roles/monitoring/defaults/main.yml`에서 병목 분석용 여유를 둔다.
+
+```yaml
+prometheus_memory_limit: "2g"
+prometheus_cpu_limit: "1.5"
+tempo_memory_limit: "1g"
+tempo_cpu_limit: "1.0"
+```
+
+- [x] **단계 4: 정책/runbook 문서 갱신**
+
+`docs/observability/monitoring-architecture-and-policy.md`와 `docs/MONITORING_GUIDE.md`에 활성화 목적, 생성 metric, 검증 명령, rollback 기준을 기록한다.
+
+- [x] **단계 5: 배포**
+
+사용자가 아래를 실행한다.
+
+```bash
+ansible-playbook -i inventory/hosts.yml playbooks/site.yml --check --diff --tags monitoring-prometheus,monitoring-tempo,monitoring-grafana
+ansible-playbook -i inventory/hosts.yml playbooks/site.yml --tags monitoring-prometheus,monitoring-tempo,monitoring-grafana
+```
+
+- [x] **단계 6: 배포 후 검증**
+
+Prometheus에서 trace-derived metric이 생겼는지 확인한다.
+
+```bash
+docker exec prometheus sh -c 'wget -qO- --post-data="query=count(traces_spanmetrics_calls_total)" http://localhost:9090/api/v1/query'
+docker exec prometheus sh -c 'wget -qO- --post-data="query=count(traces_spanmetrics_latency_bucket)" http://localhost:9090/api/v1/query'
+docker exec prometheus sh -c 'wget -qO- --post-data="query=count(traces_service_graph_request_total)" http://localhost:9090/api/v1/query'
+```
+
+Tempo generator 제한/드롭 지표를 확인한다.
+
+```bash
+docker exec prometheus sh -c 'wget -qO- --post-data="query=tempo_metrics_generator_registry_series_limited_total" http://localhost:9090/api/v1/query'
+docker exec prometheus sh -c 'wget -qO- --post-data="query=tempo_metrics_generator_processor_service_graphs_dropped_spans" http://localhost:9090/api/v1/query'
+docker exec prometheus sh -c 'wget -qO- --post-data="query=tempo_metrics_generator_processor_service_graphs_expired_edges" http://localhost:9090/api/v1/query'
+```
+
+Grafana에서는 `Explore -> Tempo -> service.name=sallang-backend`로 trace를 검색한 뒤 Service Graph/Node Graph가 비어 있지 않은지 확인한다.
+
+2026-05-17 KST 확인:
+
+```text
+count(traces_spanmetrics_calls_total) -> 19
+count(traces_service_graph_request_total) -> 1
+tempo_metrics_generator_registry_series_limited_total -> 0
+prometheus_tsdb_head_series -> 13689
+```
+
+판정:
+
+- Tempo metrics-generator는 trace-derived metric을 생성 중.
+- series 제한은 발생하지 않음.
+- active series 수는 낮은 편이라 현재 cardinality 부담은 작음.
+
+- [x] **단계 7: rollback 기준**
+
+아래 중 하나가 발생하면 `overrides.defaults.metrics_generator.processors: []`로 되돌리고 `monitoring-tempo`를 재적용한다.
+
+- `tempo_metrics_generator_registry_series_limited_total` 증가
+- Prometheus memory가 새 steady state에서 비정상 증가
+- Tempo memory/CPU가 지속적으로 limit에 근접
+- Grafana Tempo query 또는 dashboard query가 체감 가능하게 느려짐
+- service graph가 raw URL, UUID, token류 label로 오염됨
 
 ---
 
@@ -1048,7 +1167,7 @@ Tempo metrics-generator는 Tempo에 들어온 span을 집계해서 Prometheus me
 **파일**
 - 수정: `docs/MONITORING_GUIDE.md`
 
-- [ ] **단계 1: 검증 섹션 추가**
+- [x] **단계 1: 검증 섹션 추가**
 
 `docs/MONITORING_GUIDE.md`에 추가:
 
@@ -1076,6 +1195,48 @@ docker exec grafana curl -sS -G -m 20 -w '\nHTTP %{http_code} time %{time_total}
 
 ---
 
+## 작업 10: UI/대시보드 개선 분석과 후속 보류
+
+이번 안정화에서는 쿼리 폭발을 줄이고 장애 탐지 경로를 동작하게 만드는 것을 우선했다. 대시보드 사용성은 아직 개선 여지가 있다.
+
+현재 불편한 점:
+
+- `Recent ERROR Logs`는 Loki `logs` 패널이라 JSON 로그 전체를 한 줄로 보여준다.
+- Java/Spring stack trace는 매우 길고, JSON 문자열 안에서는 줄바꿈이 `\n`으로 escape되어 보인다.
+- 장애 원인 파악에 필요한 핵심 필드(`message`, `exception.type`, `http.route`, `http.status_code`, `traceId`, `version`)보다 `stack_trace`가 화면을 압도한다.
+- `Request Rate`, `Error Rate`, `Latency` 패널 제목에는 “Click Exemplars to Trace”가 남아 있다. Task 8 배포 후 trace-derived exemplar 경로가 실제로 동작하는지 확인하고, 동작하지 않으면 문구를 현실화할 필요가 있다.
+- `Logs / App` debug 대시보드는 원시 로그 탐색용으로는 유용하지만, 운영 대시보드 첫 화면에 노출되면 broad log 탐색을 유도할 수 있다.
+
+현 상태에서 맞는 운영 방식:
+
+- APM 대시보드에서는 장애 발생 여부, route, status, rate, latency를 먼저 본다.
+- `Recent ERROR Logs`는 최근 ERROR 존재 확인과 traceId 확보 용도로만 본다.
+- 긴 stack trace 전문은 Grafana Explore에서 해당 traceId 또는 log line을 펼쳐 확인한다.
+- Alert에서 route/status/application/version을 보고, Tempo에서 trace를 열고, 필요할 때 Loki 원문으로 내려간다.
+
+후속 개선 후보:
+
+1. `Recent ERROR Logs`를 원문 패널이 아니라 요약 패널로 분리한다.
+   - 표시 필드: time, message, exception.type, http.status_code, http.route, traceId, version
+   - stack_trace는 숨기거나 Explore에서만 확인한다.
+2. 별도 `Error Summary` 패널을 추가한다.
+   - LogQL metric query 예: `sum by (exception_type, route) (count_over_time(...[5m]))`
+   - 단, `exception.type`과 `http.route`를 Loki label로 올릴지는 cardinality 검토 후 결정한다.
+3. `Recent ERROR Logs`의 표시 옵션을 조정한다.
+   - labels 표시 여부, wrap 여부, dedup 전략, panel height를 재검토한다.
+4. trace 연결 문구를 현실화한다.
+   - Task 8 배포 후 exemplar 연결이 실제로 동작하면 문구를 유지한다.
+   - 동작하지 않으면 “Click Exemplars to Trace”를 제거하거나 “Use traceId in Explore”로 바꾼다.
+5. backend 로그 정책을 별도 검토한다.
+   - 모든 ERROR에 full stack trace를 찍을지, expected external API failure는 짧은 ERROR + debug stack으로 분리할지 결정한다.
+   - 원본 stack trace를 완전히 없애는 것은 장애 조사력을 떨어뜨리므로, 대시보드 표시 개선을 먼저 한다.
+
+이번 계획에서는 보류한다. 이유:
+
+- 현재 대시보드의 원문 로그 표시는 보기 불편하지만 장애 조사 데이터 자체는 보존한다.
+- UI 요약화를 하려면 LogQL 파싱/label/cardinality 정책과 backend 로그 정책을 함께 봐야 한다.
+- Task 1 Docker log rotation과 trace-derived metric 검증이 운영 안정성 관점에서 더 우선순위가 높다.
+
 ## 릴리스 게이트
 
 `alloy_log_drop_older_than`을 `1h`에서 `24h`로 바꾸기 전에 아래 조건을 모두 만족해야 한다.
@@ -1096,6 +1257,6 @@ docker exec grafana curl -sS -G -m 20 -w '\nHTTP %{http_code} time %{time_total}
 - Alloy drop 관측: Task 2에서 처리.
 - dev 500 미탐지: Task 5에서 처리.
 - Backend 역할: Task 6, Task 7에서 처리.
-- Datadog식 APM 후속: Task 8에서 보류 설계.
+- Datadog식 APM 후속: Task 8에서 Tempo metrics-generator 활성화로 진행.
 - placeholder marker 없음.
 - 주요 변수명은 `alloy_log_drop_older_than`, `docker_log_max_size`, `docker_log_max_file`로 일관됨.
