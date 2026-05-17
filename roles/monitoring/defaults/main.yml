@@ -38,12 +38,12 @@ node_exporter_port: 9100
 cadvisor_port: 8080
 
 # Resource Limits
-prometheus_memory_limit: "1g"
-prometheus_cpu_limit: "1.0"
+prometheus_memory_limit: "2g"
+prometheus_cpu_limit: "1.5"
 loki_memory_limit: "512m"
 loki_cpu_limit: "0.5"
-tempo_memory_limit: "512m"
-tempo_cpu_limit: "0.5"
+tempo_memory_limit: "1g"
+tempo_cpu_limit: "1.0"
 grafana_memory_limit: "512m"
 grafana_cpu_limit: "0.5"
 alloy_memory_limit: "256m"

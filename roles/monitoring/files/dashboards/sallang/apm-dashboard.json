@@ -356,6 +356,173 @@
     {
       "collapsed": false,
       "gridPos": { "h": 1, "w": 24, "x": 0, "y": 21 },
+      "id": 20,
+      "panels": [],
+      "title": "🔎 Trace-Derived Request Flow",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "description": "Tempo span metrics에서 생성된 요청 수입니다. 그래프의 exemplar 점을 클릭하면 해당 요청 trace로 이동합니다.",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": { "type": "linear" },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": { "group": "A", "mode": "none" },
+            "thresholdsStyle": { "mode": "off" }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "green", "value": null }]
+          },
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 22 },
+      "id": 21,
+      "options": {
+        "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "single", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "exemplar": true,
+          "expr": "sum(rate(traces_spanmetrics_calls_total{service=\"sallang-backend\"}[$__rate_interval])) by (span_name, span_kind, status_code)",
+          "format": "time_series",
+          "legendFormat": "{{status_code}} {{span_kind}} {{span_name}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Trace Requests by Span - Click Exemplar",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "description": "Tempo span metrics에서 생성된 span별 P95 지연입니다. 느린 span의 exemplar를 클릭해 trace waterfall에서 세부 시간을 확인합니다.",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": { "type": "linear" },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": { "group": "A", "mode": "none" },
+            "thresholdsStyle": { "mode": "off" }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "green", "value": null }]
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 22 },
+      "id": 22,
+      "options": {
+        "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "single", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "exemplar": true,
+          "expr": "histogram_quantile(0.95, sum(rate(traces_spanmetrics_latency_bucket{service=\"sallang-backend\"}[$__rate_interval])) by (le, span_name))",
+          "format": "time_series",
+          "legendFormat": "P95 {{span_name}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Trace P95 Latency by Span - Click Exemplar",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "description": "Tempo service graph metric에서 생성된 service 간 호출량입니다. sallang-backend가 client 또는 server인 edge를 보여줍니다.",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": { "type": "linear" },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": { "group": "A", "mode": "none" },
+            "thresholdsStyle": { "mode": "off" }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "green", "value": null }]
+          },
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 30 },
+      "id": 23,
+      "options": {
+        "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "single", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "exemplar": true,
+          "expr": "sum(rate(traces_service_graph_request_total{client=\"sallang-backend\"}[$__rate_interval])) by (client, server) or sum(rate(traces_service_graph_request_total{server=\"sallang-backend\"}[$__rate_interval])) by (client, server)",
+          "format": "time_series",
+          "legendFormat": "{{client}} -> {{server}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Service Graph Request Rate",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 39 },
       "id": 4,
       "panels": [],
       "title": "📋 Error Logs",
@@ -363,7 +530,7 @@
     },
     {
       "datasource": { "type": "loki", "uid": "loki-sallang" },
-      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 22 },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 40 },
       "id": 5,
       "options": {
         "dedupStrategy": "none",

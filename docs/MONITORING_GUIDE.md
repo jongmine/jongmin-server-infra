@@ -19,6 +19,7 @@
 7. [대시보드](#7-대시보드)
 8. [Ansible 배포](#8-ansible-배포)
 9. [운영 팁](#9-운영-팁)
+10. [관측성 검증 Runbook](#10-관측성-검증-runbook)
 
 ---
 
@@ -307,6 +308,221 @@ Loki 데이터소스의 `X-Scope-OrgID` 헤더 확인. sallang 팀 → `sallang-
 **Alloy CPU가 높음**
 `docker logs --since 10m loki 2>&1 | grep -c "timestamp too old"` 로 에러 확인.
 `stage.drop older_than=1h` 설정이 방어하고 있으며, positions 파일 손실 직후에는 일시적으로 높을 수 있습니다.
+
+---
+
+## 10. 관측성 검증 Runbook
+
+모니터링 설정 변경, backend 배포, 장애 재현 후 아래 순서로 확인합니다.
+
+### 10.1 Prometheus 수집 상태
+
+Alloy와 backend target이 살아 있는지 확인합니다.
+
+```bash
+docker exec prometheus sh -c 'wget -qO- http://localhost:9090/api/v1/targets | grep -E "\"scrapePool\":\"alloy\"|sallang-backend-dev"'
+```
+
+기대 결과:
+
+- `scrapePool":"alloy"` target의 `health`가 `up`
+- `sallang-backend-dev` target의 `health`가 `up`
+
+backend metric label이 contract와 맞는지 확인합니다.
+
+```bash
+docker exec prometheus sh -c 'wget -qO- --post-data="query=group by (application, environment) (http_server_requests_seconds_count{application=\"sallang-backend-dev\"})" http://localhost:9090/api/v1/query'
+```
+
+기대 결과:
+
+- `application="sallang-backend-dev"`
+- `environment="dev"`
+
+Logback metric label은 Prometheus에서 소문자 level을 사용합니다.
+
+```bash
+docker exec prometheus sh -c 'wget -qO- --post-data="query=count by (level, application, environment) (logback_events_total{application=\"sallang-backend-dev\"})" http://localhost:9090/api/v1/query'
+```
+
+기대 결과:
+
+- `level="error"` 등 소문자 level label
+- non-empty vector
+
+Alloy stale log drop metric은 값이 없어도 API가 success이면 됩니다.
+
+```bash
+docker exec prometheus sh -c 'wget -qO- --post-data="query=sum by (reason) (rate(loki_process_dropped_lines_total{reason=\"too_old\"}[5m]))" http://localhost:9090/api/v1/query'
+```
+
+기대 결과:
+
+- `status":"success"`
+- 최근 drop이 없으면 empty vector 또는 0 가능
+
+### 10.2 Prometheus alert 확인
+
+현재 firing/pending alert를 확인합니다.
+
+```bash
+docker exec prometheus sh -c 'wget -qO- http://localhost:9090/api/v1/alerts'
+```
+
+dev backend 5xx 알림 규칙이 로드됐는지 확인합니다.
+
+```bash
+docker exec prometheus sh -c 'wget -qO- http://localhost:9090/api/v1/rules | grep -E "SallangDevAny5xx|SallangDevHighErrorLogs|SallangHighErrorRate"'
+```
+
+기대 결과:
+
+- `SallangDevAny5xx`가 존재하고 health가 `ok`
+- `SallangDevHighErrorLogs`가 존재하고 health가 `ok`
+- `SallangHighErrorRate` query에 `application!="sallang-backend-dev"`가 포함됨
+
+502를 재현한 직후에는 dev 전용 알림만 즉시 firing되어야 합니다.
+
+```bash
+docker exec prometheus sh -c 'wget -qO- --post-data="query=ALERTS{alertname=~\"SallangDevAny5xx|SallangHighErrorRate\"}" http://localhost:9090/api/v1/query'
+```
+
+기대 결과:
+
+- dev backend 단발 502는 `SallangDevAny5xx`가 담당
+- dev backend 502만으로 `SallangHighErrorRate`가 firing되지 않음
+
+### 10.3 Loki 로그 확인
+
+Sallang 로그는 `X-Scope-OrgID: sallang-backend` tenant로 조회합니다.
+
+```bash
+docker exec grafana curl -sS -G \
+  -H 'X-Scope-OrgID: sallang-backend' \
+  --data-urlencode 'query={application="sallang-backend-dev"}' \
+  --data-urlencode 'limit=3' \
+  --data-urlencode 'direction=backward' \
+  http://loki:3100/loki/api/v1/query_range
+```
+
+기대 결과:
+
+- `service="sallang-backend"`
+- `application="sallang-backend-dev"`
+- `env="dev"`
+- `version=<git sha>`
+- `traceId`, `spanId` 포함
+
+ERROR 로그는 Loki stream label 기준으로 대문자 `ERROR`를 사용합니다.
+
+```bash
+docker exec grafana curl -sS -G \
+  -H 'X-Scope-OrgID: sallang-backend' \
+  --data-urlencode 'query={application="sallang-backend-dev", level="ERROR"}' \
+  --data-urlencode 'limit=5' \
+  --data-urlencode 'direction=backward' \
+  http://loki:3100/loki/api/v1/query_range
+```
+
+기대 결과:
+
+- 최근 ERROR log가 있으면 result가 반환됨
+- `exception.type`, `exception.message`, `http.status_code`, `http.method`, `http.route` 확인 가능
+
+Loki label 값 자체를 확인합니다.
+
+```bash
+docker exec loki sh -c 'wget -qO- --header="X-Scope-OrgID: sallang-backend" "http://localhost:3100/loki/api/v1/label/level/values"'
+```
+
+기대 결과:
+
+- `DEBUG`, `ERROR`, `INFO`, `WARN` 같은 대문자 label values
+
+### 10.4 Tempo trace 확인
+
+Loki ERROR 로그에서 `traceId`를 하나 고른 뒤 Tempo에서 직접 조회합니다.
+
+```bash
+docker exec grafana curl -sS "http://tempo:3200/api/traces/<traceId>"
+```
+
+기대 결과:
+
+- `service.name="sallang-backend"`
+- `service.namespace="sallang"`
+- `deployment.environment="dev"`
+- `service.version=<git sha>`
+- HTTP span에 `status="502"` 또는 재현한 status 포함
+
+service name으로 최근 trace 검색도 가능합니다.
+
+```bash
+docker exec grafana curl -sS -G \
+  --data-urlencode 'tags=service.name=sallang-backend' \
+  --data-urlencode 'limit=5' \
+  http://tempo:3200/api/search
+```
+
+### 10.5 Tempo metrics-generator 확인
+
+Tempo metrics-generator 배포 후 새 요청을 몇 번 발생시킨 뒤 trace-derived metric이 Prometheus에 들어오는지 확인합니다.
+
+```bash
+docker exec prometheus sh -c 'wget -qO- --post-data="query=count(traces_spanmetrics_calls_total)" http://localhost:9090/api/v1/query'
+docker exec prometheus sh -c 'wget -qO- --post-data="query=count(traces_spanmetrics_latency_bucket)" http://localhost:9090/api/v1/query'
+docker exec prometheus sh -c 'wget -qO- --post-data="query=count(traces_service_graph_request_total)" http://localhost:9090/api/v1/query'
+```
+
+기대 결과:
+
+- 각 query가 HTTP 200으로 응답
+- result 값이 `0`이 아니면 span metrics/service graph metric 생성 확인
+- 배포 직후 요청이 없으면 일시적으로 `0`일 수 있으므로 backend 요청을 만든 뒤 다시 조회
+
+cardinality 제한이나 service graph edge drop이 발생하는지도 확인합니다.
+
+```bash
+docker exec prometheus sh -c 'wget -qO- --post-data="query=tempo_metrics_generator_registry_series_limited_total" http://localhost:9090/api/v1/query'
+docker exec prometheus sh -c 'wget -qO- --post-data="query=tempo_metrics_generator_processor_service_graphs_dropped_spans" http://localhost:9090/api/v1/query'
+docker exec prometheus sh -c 'wget -qO- --post-data="query=tempo_metrics_generator_processor_service_graphs_expired_edges" http://localhost:9090/api/v1/query'
+```
+
+기대 결과:
+
+- `tempo_metrics_generator_registry_series_limited_total` 증가 없음
+- dropped/expired edge가 지속 증가하면 service graph pairing 품질 또는 span 전파를 점검
+
+Grafana에서는 `Explore` → `Tempo`에서 `service.name=sallang-backend`로 trace를 검색하고, Service Graph/Node Graph가 비어 있지 않은지 봅니다.
+
+### 10.6 Grafana UI 확인
+
+Grafana에서 아래 순서로 봅니다.
+
+1. `Dashboards` → `Sallang APM`
+2. 상단 `application` 변수를 `sallang-backend-dev`로 선택
+3. `RPS`, `4xx Error Rate`, `5xx Error Rate`, `P95 Latency` 확인
+4. `Trace-Derived Request Flow` 섹션으로 이동
+5. `Trace Requests by Span - Click Exemplar` 또는 `Trace P95 Latency by Span - Click Exemplar` 패널에서 느린/에러 series를 확인
+6. 그래프 위의 작은 exemplar 점을 클릭
+7. 팝업의 `traceID`가 링크로 표시되면 클릭해 Tempo trace 화면으로 이동
+8. 열린 trace 화면의 waterfall에서 전체 요청 시간과 span별 시간을 확인
+9. 외부 호출, DB, Redis, 내부 처리 span 중 어느 구간이 오래 걸렸는지 확인
+10. trace 화면에서 `Logs for this span`을 눌러 같은 traceId의 Loki 로그를 확인
+11. trace 화면의 metrics 링크로 span request rate/P95 latency 주변 추이를 확인
+12. `Service Graph Request Rate`에서 `sallang-backend -> downstream` 호출량 확인
+13. 에러라면 `Recent ERROR Logs`에서 같은 시간대 `traceId`를 확인하고 Tempo에서 조회
+
+`Recent ERROR Logs`는 원문 JSON log를 보여주므로 stack trace가 길 수 있습니다. 대시보드에서는 최근 ERROR 존재와 traceId 확보를 우선하고, 긴 stack trace는 Explore에서 펼쳐 봅니다.
+
+exemplar 점이 보이지 않으면 아래를 먼저 확인합니다.
+
+```bash
+docker exec prometheus sh -c 'wget -qO- --post-data="query=count(traces_spanmetrics_calls_total)" http://localhost:9090/api/v1/query'
+docker exec prometheus sh -c 'wget -qO- --post-data="query=count(traces_service_graph_request_total)" http://localhost:9090/api/v1/query'
+```
+
+두 query가 non-zero인데 exemplar 점이 안 보이면 Grafana time range를 최근 15분으로 줄이고, backend 요청을 새로 발생시킨 뒤 다시 봅니다.
 
 ---
 
