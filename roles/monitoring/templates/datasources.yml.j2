@@ -18,9 +18,11 @@ datasources:
       timeInterval: 15s
       queryTimeout: 60s
       httpMethod: POST
-      exemplars:
+      exemplarTraceIdDestinations:
         - datasourceUid: tempo
-          internal: true
+          name: traceID
+        - datasourceUid: tempo
+          name: trace_id
       # Exemplars를 지원하는 Prometheus 버전(2.26+)임을 명시
       enableExemplars: true
 
@@ -37,6 +39,16 @@ datasources:
         - datasourceUid: tempo
           matcherRegex: '"traceId":"(\w+)"'
           name: TraceID
+          url: '$${__value.raw}'
+          urlDisplayLabel: 'View Trace'
+        - datasourceUid: tempo
+          matcherRegex: '"traceID":"(\w+)"'
+          name: TraceIDUpper
+          url: '$${__value.raw}'
+          urlDisplayLabel: 'View Trace'
+        - datasourceUid: tempo
+          matcherRegex: '"trace_id":"(\w+)"'
+          name: TraceIDSnake
           url: '$${__value.raw}'
           urlDisplayLabel: 'View Trace'
     secureJsonData:
@@ -56,17 +68,45 @@ datasources:
         enabled: true
       tracesToLogsV2:
         datasourceUid: loki-sallang
-        spanStartTimeShift: '-1h'
-        spanEndTimeShift: '1h'
+        spanStartTimeShift: '-5m'
+        spanEndTimeShift: '5m'
         tags:
           - key: 'service.name'
-            value: 'application'
+            value: 'service_name'
         filterByTraceID: true
         filterBySpanID: false
         customQuery: true
-        query: '{application="$${__span.tags.service_name}"} |= "$${__span.traceId}"'
+        query: '{application=~"sallang-backend.*"} |= "$${__span.traceId}"'
+      tracesToMetrics:
+        datasourceUid: prometheus
+        spanStartTimeShift: '-5m'
+        spanEndTimeShift: '5m'
+        tags:
+          - key: 'service.name'
+            value: 'service'
+          - key: 'deployment.environment'
+            value: 'deployment_environment'
+          - key: 'service.version'
+            value: 'service_version'
+        queries:
+          - name: 'Span request rate'
+            query: 'sum(rate(traces_spanmetrics_calls_total{$$__tags}[5m]))'
+          - name: 'Span P95 latency'
+            query: 'histogram_quantile(0.95, sum(rate(traces_spanmetrics_latency_bucket{$$__tags}[5m])) by (le, span_name))'
+          - name: 'Service graph request rate'
+            query: 'sum(rate(traces_service_graph_request_total[5m])) by (client, server)'
       serviceMap:
         datasourceUid: prometheus
+      traceQuery:
+        timeShiftEnabled: true
+        spanStartTimeShift: '-5m'
+        spanEndTimeShift: '5m'
+      spanBar:
+        type: 'Tag'
+        tag: 'http.route'
+      streamingEnabled:
+        search: true
+        metrics: true
 
   # ============================================================================
   # Sallang Team Datasources (Restricted Access)
@@ -85,6 +125,16 @@ datasources:
         - datasourceUid: tempo
           matcherRegex: '"traceId":"(\w+)"'
           name: TraceID
+          url: '$${__value.raw}'
+          urlDisplayLabel: 'View Trace'
+        - datasourceUid: tempo
+          matcherRegex: '"traceID":"(\w+)"'
+          name: TraceIDUpper
+          url: '$${__value.raw}'
+          urlDisplayLabel: 'View Trace'
+        - datasourceUid: tempo
+          matcherRegex: '"trace_id":"(\w+)"'
+          name: TraceIDSnake
           url: '$${__value.raw}'
           urlDisplayLabel: 'View Trace'
     secureJsonData:
