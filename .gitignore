@@ -1,4 +1,5 @@
 inventory/group_vars/all_vault.yml
+inventory/group_vars/all/vault
 .vault_pass
 .DS_Store
 *.retry
