@@ -37,8 +37,8 @@ inhibit_rules:
 {#
 To enable Slack + Telegram notifications:
 
-=== Step 1: Vault에 추가 ===
-ansible-vault edit inventory/group_vars/all/vault
+=== Step 1: secret store와 로컬 vault 파일에 추가 ===
+vi inventory/group_vars/all/vault
 
   # Slack: api.slack.com/apps → New App → Incoming Webhooks → 채널별 URL 발급
   # (반드시 Slack App Incoming Webhook 사용. Legacy custom integration 사용 금지)
