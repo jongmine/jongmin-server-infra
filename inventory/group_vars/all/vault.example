@@ -1,0 +1,42 @@
+---
+# Copy this file to inventory/group_vars/all/vault and fill real values locally.
+# The real vault file is intentionally gitignored and kept as plain YAML.
+#
+# Secret source of truth:
+# - Register these values in your secret manager / CI secrets.
+# - Do not commit the generated inventory/group_vars/all/vault file.
+# - Keep variable names stable because inventory/group_vars/all/vars references them.
+
+# Cloudflare API Configuration
+vault_cloudflare_api_token: "REPLACE_WITH_SECRET_CLOUDFLARE_API_TOKEN"
+
+# Let's Encrypt Configuration
+vault_letsencrypt_email: "admin@example.com"
+
+# Homepage Basic Auth
+vault_homepage_basic_auth_user: "REPLACE_WITH_SECRET_HOMEPAGE_BASIC_AUTH_USER"
+vault_homepage_basic_auth_password: "REPLACE_WITH_SECRET_HTPASSWD_BCRYPT_HASH"
+
+# Developer Access (for Portainer, etc.)
+vault_developer_basic_auth_user: "REPLACE_WITH_SECRET_DEVELOPER_BASIC_AUTH_USER"
+vault_developer_basic_auth_password: "REPLACE_WITH_SECRET_HTPASSWD_BCRYPT_HASH"
+
+# Tailscale Configuration
+vault_tailscale_auth_key: "REPLACE_WITH_SECRET_TAILSCALE_AUTH_KEY"
+vault_tailscale_api_key: "REPLACE_WITH_SECRET_TAILSCALE_API_KEY"
+vault_tailscale_device_id: "REPLACE_WITH_SECRET_TAILSCALE_DEVICE_ID"
+
+# Portainer Configuration (for Homepage widget)
+vault_portainer_api_key: "REPLACE_WITH_SECRET_PORTAINER_API_KEY"
+vault_portainer_env_id: 1
+
+# IP AllowList
+vault_developer_ips:
+  - "127.0.0.1"
+
+# Grafana Configuration
+vault_grafana_admin_user: "REPLACE_WITH_SECRET_GRAFANA_ADMIN_USER"
+vault_grafana_admin_password: "REPLACE_WITH_SECRET_GRAFANA_ADMIN_PASSWORD"
+
+# Alertmanager - Slack
+vault_alertmanager_slack_webhook: "REPLACE_WITH_SECRET_ALERTMANAGER_SLACK_WEBHOOK"

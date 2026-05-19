@@ -53,7 +53,8 @@ graph TD
 │   ├── hosts.yml             # 서버 접속 정보
 │   └── group_vars/all/
 │       ├── vars              # 공개 변수
-│       └── vault             # 민감 정보 (Vault 암호화)
+│       ├── vault.example     # 민감 변수 예시
+│       └── vault             # 민감 정보 (평문 로컬 파일, gitignore)
 ├── playbooks/                # 메인 배포 스크립트 (site.yml)
 ├── roles/                    # Ansible Roles (Core Infra)
 │   ├── common/
@@ -95,7 +96,8 @@ graph TD
 Ansible Best Practices를 따라 변수를 체계적으로 관리합니다:
 
 - **공개 변수** (`inventory/group_vars/all/vars`): 도메인, 네트워크 이름 등
-- **민감 변수** (`inventory/group_vars/all/vault`): API 토큰, 비밀번호 등 (`vault_` 접두사)
+- **민감 변수 예시** (`inventory/group_vars/all/vault.example`): 필요한 secret key 목록
+- **민감 변수 실제값** (`inventory/group_vars/all/vault`): API 토큰, 비밀번호 등 (`vault_` 접두사). 이 파일은 평문 로컬 파일이며 git에 커밋하지 않습니다.
 - **Role 기본값** (`roles/*/defaults/main.yml`): 각 role의 기본 설정값
 
 #### 변수 추가 방법
@@ -112,8 +114,13 @@ vi inventory/group_vars/all/vars
 # 1. vars 파일에 참조 추가
 echo 'new_token: "{{ vault_new_token }}"' >> inventory/group_vars/all/vars
 
-# 2. vault 파일에 실제 값 추가 (암호화된 경우)
-ansible-vault edit inventory/group_vars/all/vault
+# 2. vault.example에 새 키를 placeholder로 추가
+echo 'vault_new_token: "REPLACE_WITH_SECRET_NEW_TOKEN"' >> inventory/group_vars/all/vault.example
+
+# 3. 실제 secret store / CI secrets에 값을 등록
+
+# 4. 로컬 평문 vault 파일에 실제 값 추가
+vi inventory/group_vars/all/vault
 ```
 
 ## 🚀 Quick Start
@@ -122,15 +129,17 @@ ansible-vault edit inventory/group_vars/all/vault
 
 - **Ubuntu 24.04 LTS**
 - **Ansible** 설치 (`brew install ansible`)
-- **Git Clone** & **Vault 설정**
+- **Git Clone** & **Secret 설정**
 
 ```bash
-# Vault 템플릿 복사
-cp inventory/group_vars/all_vault.yml.template inventory/group_vars/all/vault
+# 민감 변수 예시를 로컬 vault 파일로 복사
+cp inventory/group_vars/all/vault.example inventory/group_vars/all/vault
 
-# Vault 파일 편집 (실제 API 토큰 등 입력)
-ansible-vault edit inventory/group_vars/all/vault
+# 로컬 vault 파일 편집 (실제 API 토큰 등 입력)
+vi inventory/group_vars/all/vault
 ```
+
+`inventory/group_vars/all/vault`는 `.gitignore` 대상입니다. 실제 값은 별도의 secret manager 또는 CI/CD secrets에 등록하고, 로컬 실행 시에만 평문 파일로 생성하세요.
 
 ### 2. Configure Inventory
 
@@ -140,29 +149,23 @@ ansible-vault edit inventory/group_vars/all/vault
 ansible_host: 192.168.x.x # 실제 서버 IP 입력
 ```
 
-### 3. Vault 암호화 (운영 환경)
+### 3. Secret 관리 원칙
 
-운영 환경에서는 vault 파일을 반드시 암호화하세요:
+이 저장소에서는 실제 secret 파일을 커밋하지 않습니다.
 
-```bash
-# Vault 파일 암호화
-ansible-vault encrypt inventory/group_vars/all/vault
-
-# 암호화된 파일 편집
-ansible-vault edit inventory/group_vars/all/vault
-```
+- `inventory/group_vars/all/vault.example`만 커밋합니다.
+- `inventory/group_vars/all/vault`는 평문 로컬 파일로 두고 gitignore합니다.
+- 운영/CI에서 필요한 값은 GitHub Actions Secrets, 1Password, Doppler, SOPS 등 별도 secret store에 등록합니다.
+- 과거에 커밋된 secret은 gitignore만으로 폐기되지 않으므로, 노출 가능성이 있는 토큰은 회전해야 합니다.
 
 ### 4. Deploy Infrastructure
 
 ```bash
-# Vault 비밀번호 없이 실행 (개발 환경, vault 평문)
+# 로컬 평문 vault 파일로 실행
 ansible-playbook -i inventory/hosts.yml playbooks/site.yml
 
-# Vault 비밀번호와 함께 실행 (운영 환경, vault 암호화)
-ansible-playbook -i inventory/hosts.yml playbooks/site.yml --ask-vault-pass
-
 # Dry-run (변경사항 미리 확인)
-ansible-playbook -i inventory/hosts.yml playbooks/site.yml --check --ask-vault-pass
+ansible-playbook -i inventory/hosts.yml playbooks/site.yml --check --diff
 ```
 
 ---

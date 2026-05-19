@@ -15,7 +15,7 @@ fail2ban_bantime: 3600
 fail2ban_maxretry: 5
 
 # =======================================================================
-# Sensitive Variables (Reference from Vault)
+# Sensitive Variables (Reference from gitignored local secret file)
 # =======================================================================
 
 # Cloudflare API Configuration
