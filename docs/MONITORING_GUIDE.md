@@ -276,12 +276,13 @@ ansible-playbook playbooks/site.yml --tags monitoring-grafana      # Grafana
 ansible-playbook playbooks/site.yml --tags monitoring-grafana-dashboards  # 대시보드만
 ```
 
-### Vault 편집
+### Secret 편집
 
-민감한 정보(Slack Webhook, Grafana 비밀번호 등)는 Vault에서 관리합니다.
+민감한 정보(Slack Webhook, Grafana 비밀번호 등)는 별도 secret store에 등록하고, 로컬 실행 시에는 gitignore된 평문 파일에 주입합니다.
 
 ```bash
-ansible-vault edit inventory/group_vars/all/vault
+cp inventory/group_vars/all/vault.example inventory/group_vars/all/vault
+vi inventory/group_vars/all/vault
 ```
 
 ---
@@ -303,7 +304,7 @@ Loki 데이터소스의 `X-Scope-OrgID` 헤더 확인. sallang 팀 → `sallang-
 
 1. `http://jongmin-server:9090/alerts` 에서 Alert 상태 확인
 2. Alertmanager에서 Silence 여부 확인
-3. Vault의 `vault_alertmanager_slack_webhook` 값 확인
+3. Secret store와 로컬 `inventory/group_vars/all/vault`의 `vault_alertmanager_slack_webhook` 값 확인
 
 **Alloy CPU가 높음**
 `docker logs --since 10m loki 2>&1 | grep -c "timestamp too old"` 로 에러 확인.
