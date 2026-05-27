@@ -1,0 +1,502 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": "-- Grafana --",
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "target": {
+          "limit": 100,
+          "matchAny": false,
+          "tags": [],
+          "type": "dashboard"
+        },
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 100,
+      "title": "☕ JVM Memory",
+      "type": "row"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "lineWidth": 2 },
+          "unit": "bytes"
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "heap max" },
+            "properties": [
+              { "id": "custom.lineStyle", "value": { "dash": [4, 4], "fill": "dash" } },
+              { "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }
+            ]
+          }
+        ]
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 1 },
+      "id": 1,
+      "options": {
+        "legend": { "calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "expr": "sum(jvm_memory_used_bytes{area=\"heap\"}) by (job)",
+          "legendFormat": "heap used",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(jvm_memory_committed_bytes{area=\"heap\"}) by (job)",
+          "legendFormat": "heap committed",
+          "refId": "B"
+        },
+        {
+          "expr": "sum(jvm_memory_max_bytes{area=\"heap\"}) by (job)",
+          "legendFormat": "heap max",
+          "refId": "C"
+        }
+      ],
+      "title": "Heap Memory Usage",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "lineWidth": 2 },
+          "unit": "bytes"
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 1 },
+      "id": 2,
+      "options": {
+        "legend": { "calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "expr": "sum(jvm_memory_used_bytes{area=\"nonheap\"}) by (job)",
+          "legendFormat": "non-heap used",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(jvm_memory_committed_bytes{area=\"nonheap\"}) by (job)",
+          "legendFormat": "non-heap committed",
+          "refId": "B"
+        }
+      ],
+      "title": "Non-Heap Memory Usage",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 9 },
+      "id": 101,
+      "title": "♻️ GC",
+      "type": "row"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "lineWidth": 2 },
+          "unit": "s"
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 10 },
+      "id": 3,
+      "options": {
+        "legend": { "calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "expr": "rate(jvm_gc_pause_seconds_sum[1m])",
+          "legendFormat": "GC pause rate ({{cause}})",
+          "refId": "A"
+        }
+      ],
+      "title": "GC Pause Rate (s/s)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "lineWidth": 2 },
+          "unit": "ops"
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 10 },
+      "id": 4,
+      "options": {
+        "legend": { "calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "expr": "rate(jvm_gc_pause_seconds_count[1m])",
+          "legendFormat": "GC count/s ({{cause}})",
+          "refId": "A"
+        }
+      ],
+      "title": "GC Count Rate",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 18 },
+      "id": 102,
+      "title": "🧵 Threads & CPU",
+      "type": "row"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "lineWidth": 2 },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 19 },
+      "id": 5,
+      "options": {
+        "legend": { "calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "expr": "jvm_threads_live_threads",
+          "legendFormat": "live",
+          "refId": "A"
+        },
+        {
+          "expr": "jvm_threads_daemon_threads",
+          "legendFormat": "daemon",
+          "refId": "B"
+        },
+        {
+          "expr": "jvm_threads_peak_threads",
+          "legendFormat": "peak",
+          "refId": "C"
+        }
+      ],
+      "title": "Thread Count",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "lineWidth": 2 },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 19 },
+      "id": 6,
+      "options": {
+        "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "expr": "jvm_threads_states_threads{state=\"runnable\"}",
+          "legendFormat": "RUNNABLE",
+          "refId": "A"
+        },
+        {
+          "expr": "jvm_threads_states_threads{state=\"blocked\"}",
+          "legendFormat": "BLOCKED",
+          "refId": "B"
+        },
+        {
+          "expr": "jvm_threads_states_threads{state=\"waiting\"}",
+          "legendFormat": "WAITING",
+          "refId": "C"
+        },
+        {
+          "expr": "jvm_threads_states_threads{state=\"timed-waiting\"}",
+          "legendFormat": "TIMED_WAITING",
+          "refId": "D"
+        }
+      ],
+      "title": "Thread States",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "lineWidth": 2 },
+          "unit": "percentunit",
+          "max": 1,
+          "min": 0
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 27 },
+      "id": 7,
+      "options": {
+        "legend": { "calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "expr": "process_cpu_usage",
+          "legendFormat": "process CPU",
+          "refId": "A"
+        },
+        {
+          "expr": "system_cpu_usage",
+          "legendFormat": "system CPU",
+          "refId": "B"
+        }
+      ],
+      "title": "CPU Usage",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "lineWidth": 2 },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 27 },
+      "id": 8,
+      "options": {
+        "legend": { "calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "expr": "process_open_fds",
+          "legendFormat": "open fd",
+          "refId": "A"
+        },
+        {
+          "expr": "process_max_fds",
+          "legendFormat": "max fd",
+          "refId": "B"
+        }
+      ],
+      "title": "File Descriptors",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 35 },
+      "id": 103,
+      "title": "🏊 HikariCP Connection Pool",
+      "type": "row"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "lineWidth": 2 },
+          "unit": "short",
+          "min": 0
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "max" },
+            "properties": [
+              { "id": "custom.lineStyle", "value": { "dash": [4, 4], "fill": "dash" } },
+              { "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "pending" },
+            "properties": [
+              { "id": "color", "value": { "fixedColor": "orange", "mode": "fixed" } }
+            ]
+          }
+        ]
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 36 },
+      "id": 9,
+      "options": {
+        "legend": { "calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "expr": "hikaricp_connections_active",
+          "legendFormat": "active",
+          "refId": "A"
+        },
+        {
+          "expr": "hikaricp_connections_idle",
+          "legendFormat": "idle",
+          "refId": "B"
+        },
+        {
+          "expr": "hikaricp_connections_pending",
+          "legendFormat": "pending",
+          "refId": "C"
+        },
+        {
+          "expr": "hikaricp_connections_max",
+          "legendFormat": "max",
+          "refId": "D"
+        }
+      ],
+      "title": "Connection Pool State (active / idle / pending / max)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "lineWidth": 2 },
+          "unit": "ops",
+          "min": 0
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "timeout/s" },
+            "properties": [
+              { "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }
+            ]
+          }
+        ]
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 36 },
+      "id": 10,
+      "options": {
+        "legend": { "calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "expr": "rate(hikaricp_connections_timeout_total[1m])",
+          "legendFormat": "timeout/s",
+          "refId": "A"
+        }
+      ],
+      "title": "Connection Timeout Rate",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "lineWidth": 2 },
+          "unit": "s",
+          "min": 0
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 44 },
+      "id": 11,
+      "options": {
+        "legend": { "calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, rate(hikaricp_connections_usage_seconds_bucket[1m]))",
+          "legendFormat": "p95 usage time",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.99, rate(hikaricp_connections_usage_seconds_bucket[1m]))",
+          "legendFormat": "p99 usage time",
+          "refId": "B"
+        },
+        {
+          "expr": "rate(hikaricp_connections_usage_seconds_sum[1m]) / rate(hikaricp_connections_usage_seconds_count[1m])",
+          "legendFormat": "avg usage time",
+          "refId": "C"
+        }
+      ],
+      "title": "Connection Usage Time (p95 / p99 / avg)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "lineWidth": 2 },
+          "unit": "s",
+          "min": 0
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 44 },
+      "id": 12,
+      "options": {
+        "legend": { "calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, rate(hikaricp_connections_acquire_seconds_bucket[1m]))",
+          "legendFormat": "p95 acquire time",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.99, rate(hikaricp_connections_acquire_seconds_bucket[1m]))",
+          "legendFormat": "p99 acquire time",
+          "refId": "B"
+        }
+      ],
+      "title": "Connection Acquire Time (p95 / p99)",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 52 },
+      "id": 104,
+      "title": "📋 부하테스트 해석 가이드",
+      "type": "row"
+    },
+    {
+      "datasource": null,
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 53 },
+      "id": 13,
+      "options": {
+        "content": "## 병목 해석\n\n| 현상 | 의심 원인 |\n|---|---|\n| `pending` 증가 | 요청 스레드가 DB 커넥션을 기다림 |\n| `active = max` 지속 | 커넥션 풀이 꽉 참 → slow query / lock 확인 |\n| `timeout` 증가 | 커넥션 못 얻어 요청 실패 |\n| usage 시간 증가 | 쿼리 느림, 락 대기, 트랜잭션 범위 넓음 |\n| GC pause 증가 + p99 증가 | JVM 메모리 압박 |\n| heap 계속 증가 | 메모리 누수 또는 큰 객체 생성 |\n| thread BLOCKED 증가 | synchronized 블록 또는 모니터 락 경합 |\n| CPU 낮음 + latency 높음 | DB / Redis / 외부 API 대기 (앱 문제 아님) |\n| CPU 높음 + latency 높음 | 앱 연산, 직렬화, 암호화 병목 |",
+        "mode": "markdown"
+      },
+      "title": "해석 기준",
+      "type": "text"
+    }
+  ],
+  "schemaVersion": 36,
+  "style": "dark",
+  "tags": ["jvm", "hikaricp", "sallang", "load-test"],
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "timezone": "",
+  "title": "Sallang JVM & HikariCP",
+  "uid": "sallang-jvm-hikari",
+  "version": 1
+}

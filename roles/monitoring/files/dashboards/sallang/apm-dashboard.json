@@ -522,7 +522,118 @@
     },
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 39 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 38 },
+      "id": 30,
+      "panels": [],
+      "title": "🔝 Endpoint Top N",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 39 },
+      "id": 31,
+      "options": {
+        "cellHeight": "sm",
+        "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false },
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "topk(10, histogram_quantile(0.99, sum by (uri, le) (rate(http_server_requests_seconds_bucket{application=\"$application\", uri!=\"/**\"}[$__rate_interval]))))",
+          "format": "table",
+          "instant": false,
+          "legendFormat": "{{uri}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Top Endpoints by P99 Latency",
+      "type": "table"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 39 },
+      "id": 32,
+      "options": {
+        "cellHeight": "sm",
+        "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false },
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "topk(10, sum by (uri, status) (rate(http_server_requests_seconds_count{application=\"$application\", status=~\"4..|5..\"}[$__rate_interval])))",
+          "format": "table",
+          "instant": false,
+          "legendFormat": "{{status}} {{uri}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Top Endpoints by Error Rate",
+      "type": "table"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 39 },
+      "id": 33,
+      "options": {
+        "cellHeight": "sm",
+        "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false },
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "topk(10, sum by (uri) (rate(http_server_requests_seconds_count{application=\"$application\"}[$__rate_interval])))",
+          "format": "table",
+          "instant": false,
+          "legendFormat": "{{uri}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Top Endpoints by Request Volume",
+      "type": "table"
+    },
+    {
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 47 },
+      "id": 34,
+      "options": {
+        "content": "Endpoint Top N panels are safe only when the `uri` label in `http_server_requests_seconds_*` uses template routes.\n\nSafe example: `/api/v1/users/{userId}`\n\nRisky example: `/api/v1/users/actual-uuid-value`\n\nIf raw UUIDs or path variables appear in the `uri` label, Prometheus cardinality can grow quickly and the backend route tagging must be fixed before load testing.",
+        "mode": "markdown"
+      },
+      "title": "Endpoint Label Cardinality Note",
+      "type": "text"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 55 },
       "id": 4,
       "panels": [],
       "title": "📋 Error Logs",
@@ -530,7 +641,7 @@
     },
     {
       "datasource": { "type": "loki", "uid": "loki-sallang" },
-      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 40 },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 56 },
       "id": 5,
       "options": {
         "dedupStrategy": "none",
