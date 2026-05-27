@@ -90,3 +90,48 @@ groups:
         annotations:
           summary: "Sallang dev emitted ERROR logs"
           description: {% raw %}"Sallang dev emitted more than 5 ERROR logs in 10 minutes (count: {{ $value | humanize }})"{% endraw %}
+
+      - alert: SallangPostgresExporterDown
+        expr: absent(pg_up{container_name=~"sallang-postgres-exporter.*"}) or pg_up{container_name=~"sallang-postgres-exporter.*"} == 0
+        for: 1m
+        labels:
+          severity: warning
+          team: sallang
+        annotations:
+          summary: "Sallang Postgres exporter is down"
+          description: "Postgres exporter is missing or cannot connect to the database"
+
+      - alert: SallangRedisExporterDown
+        expr: absent(redis_up{container_name=~"sallang-redis-exporter.*"}) or redis_up{container_name=~"sallang-redis-exporter.*"} == 0
+        for: 1m
+        labels:
+          severity: warning
+          team: sallang
+        annotations:
+          summary: "Sallang Redis exporter is down"
+          description: "Redis exporter is missing or cannot connect to Redis"
+
+      - alert: SallangPostgresHighConnections
+        expr: |
+          (
+            sum(pg_stat_activity_count{container_name=~"sallang-postgres-exporter.*"})
+            /
+            sum(pg_settings_max_connections{container_name=~"sallang-postgres-exporter.*"})
+          ) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          team: sallang
+        annotations:
+          summary: "Sallang Postgres connection usage is high"
+          description: {% raw %}"Postgres connection usage is above 80% (current: {{ $value | humanizePercentage }})"{% endraw %}
+
+      - alert: SallangRedisRejectedConnections
+        expr: increase(redis_rejected_connections_total{container_name=~"sallang-redis-exporter.*"}[5m]) > 0
+        for: 0m
+        labels:
+          severity: warning
+          team: sallang
+        annotations:
+          summary: "Sallang Redis rejected connections"
+          description: {% raw %}"Redis rejected one or more connections in the last 5 minutes (count: {{ $value | humanize }})"{% endraw %}

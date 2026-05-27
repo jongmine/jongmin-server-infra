@@ -23,6 +23,7 @@ vault_developer_basic_auth_password: "REPLACE_WITH_SECRET_HTPASSWD_BCRYPT_HASH"
 
 # Tailscale Configuration
 vault_tailscale_auth_key: "REPLACE_WITH_SECRET_TAILSCALE_AUTH_KEY"
+vault_tailscale_auth_key_gateway: "REPLACE_WITH_SECRET_TAILSCALE_AUTH_KEY_GATEWAY"
 vault_tailscale_api_key: "REPLACE_WITH_SECRET_TAILSCALE_API_KEY"
 vault_tailscale_device_id: "REPLACE_WITH_SECRET_TAILSCALE_DEVICE_ID"
 
