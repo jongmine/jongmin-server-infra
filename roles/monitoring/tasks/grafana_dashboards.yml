@@ -39,6 +39,8 @@
     mode: '0644'
   with_items:
     - apm-dashboard.json
+    - datastore-dashboard.json
+    - jvm-hikari-dashboard.json
   notify: Restart Grafana
 
 - name: Deploy Debug dashboards
