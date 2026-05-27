@@ -1,0 +1,390 @@
+# Instincts generated from https://github.com/jongmine/jongmin-server-infra
+# Generated: 2026-05-27T13:44:44.036Z
+# Version: 2.0
+# NOTE: This file supplements (does not replace) any existing curated instincts.
+# High-confidence manually curated instincts should be preserved alongside these.
+
+---
+id: jongmin-server-infra-commit-conventional
+trigger: "when writing a commit message"
+confidence: 0.85
+domain: git
+source: repo-analysis
+source_repo: https://github.com/jongmine/jongmin-server-infra
+---
+
+# Jongmin Server Infra Commit Conventional
+
+## Action
+
+Use conventional commit format with prefixes: fix, feat, chore
+
+## Evidence
+
+- 8 commits analyzed
+- Detected conventional commit pattern
+- Examples: fix: Docker 로그 회전 정책 추가, feat: Trace 병목 탐색 기능 구현
+
+---
+id: jongmin-server-infra-commit-length
+trigger: "when writing a commit message"
+confidence: 0.6
+domain: git
+source: repo-analysis
+source_repo: https://github.com/jongmine/jongmin-server-infra
+---
+
+# Jongmin Server Infra Commit Length
+
+## Action
+
+Keep commit messages concise (~27 characters)
+
+## Evidence
+
+- Average commit message length: 27 chars
+- Based on 8 commits
+
+---
+id: jongmin-server-infra-naming-files
+trigger: "when creating a new file"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/jongmine/jongmin-server-infra
+---
+
+# Jongmin Server Infra Naming Files
+
+## Action
+
+Use camelCase naming convention
+
+## Evidence
+
+- Analyzed file naming patterns in repository
+- Dominant pattern: camelCase
+
+---
+id: jongmin-server-infra-import-relative
+trigger: "when importing modules"
+confidence: 0.75
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/jongmine/jongmin-server-infra
+---
+
+# Jongmin Server Infra Import Relative
+
+## Action
+
+Use relative imports for project files
+
+## Evidence
+
+- Import analysis shows relative import pattern
+- Example: import { x } from '../lib/x'
+
+---
+id: jongmin-server-infra-export-style
+trigger: "when exporting from a module"
+confidence: 0.7
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/jongmine/jongmin-server-infra
+---
+
+# Jongmin Server Infra Export Style
+
+## Action
+
+Prefer named exports
+
+## Evidence
+
+- Export pattern analysis
+- Dominant style: named
+
+---
+id: jongmin-server-infra-test-separate
+trigger: "when writing tests"
+confidence: 0.8
+domain: testing
+source: repo-analysis
+source_repo: https://github.com/jongmine/jongmin-server-infra
+---
+
+# Jongmin Server Infra Test Separate
+
+## Action
+
+Place tests in the tests/ or __tests__/ directory, mirroring src structure
+
+## Evidence
+
+- Separate test directory pattern detected
+- Tests live in dedicated test folders
+
+---
+id: jongmin-server-infra-workflow-observability-dashboard-and-alert-update
+trigger: "when doing observability dashboard and alert update"
+confidence: 0.6
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/jongmine/jongmin-server-infra
+---
+
+# Jongmin Server Infra Workflow Observability Dashboard And Alert Update
+
+## Action
+
+Follow the observability-dashboard-and-alert-update workflow:
+1. Edit or add JSON files under roles/monitoring/files/dashboards/ (e.g., apm-dashboard.json, datastore-dashboard.json, jvm-hikari-dashboard.json)
+2. Update alert rules in roles/monitoring/templates/alert_rules_sallang.yml.j2
+3. Update Grafana dashboard deployment tasks in roles/monitoring/tasks/grafana_dashboards.yml
+4. Update documentation (e.g., docs/MONITORING_GUIDE.md, docs/observability/monitoring-architecture-and-policy.md) as needed
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~2x per month
+- Files: roles/monitoring/files/dashboards/*.json, roles/monitoring/templates/alert_rules_sallang.yml.j2, roles/monitoring/tasks/grafana_dashboards.yml
+
+---
+id: jongmin-server-infra-workflow-observability-policy-and-metric-hardening
+trigger: "when doing observability policy and metric hardening"
+confidence: 0.6
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/jongmine/jongmin-server-infra
+---
+
+# Jongmin Server Infra Workflow Observability Policy And Metric Hardening
+
+## Action
+
+Follow the observability-policy-and-metric-hardening workflow:
+1. Edit monitoring role defaults, templates, or handlers (e.g., roles/monitoring/defaults/main.yml, roles/monitoring/templates/*.j2)
+2. Edit or add documentation and plans (e.g., docs/observability/monitoring-architecture-and-policy.md, docs/superpowers/plans/...)
+3. Edit dashboards or Prometheus/Grafana configuration as needed
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~2x per month
+- Files: roles/monitoring/defaults/main.yml, roles/monitoring/templates/*.j2, docs/observability/monitoring-architecture-and-policy.md
+
+---
+id: jongmin-server-infra-instinct-file-naming
+trigger: "When creating or renaming a file in the codebase"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: jongmine/jongmin-server-infra
+---
+
+# Jongmin Server Infra Instinct File Naming
+
+## Action
+
+Use camelCase for file names
+
+## Evidence
+
+- Pattern in codeStyle.namingConventions.files
+- No evidence of snake_case or kebab-case in file names
+
+---
+id: jongmin-server-infra-instinct-function-naming
+trigger: "When defining a function"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: jongmine/jongmin-server-infra
+---
+
+# Jongmin Server Infra Instinct Function Naming
+
+## Action
+
+Use camelCase for function names
+
+## Evidence
+
+- Pattern in codeStyle.namingConventions.functions
+
+---
+id: jongmin-server-infra-instinct-class-naming
+trigger: "When defining a class"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: jongmine/jongmin-server-infra
+---
+
+# Jongmin Server Infra Instinct Class Naming
+
+## Action
+
+Use PascalCase for class names
+
+## Evidence
+
+- Pattern in codeStyle.namingConventions.classes
+
+---
+id: jongmin-server-infra-instinct-constant-naming
+trigger: "When defining a constant"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: jongmine/jongmin-server-infra
+---
+
+# Jongmin Server Infra Instinct Constant Naming
+
+## Action
+
+Use SCREAMING_SNAKE_CASE for constant names
+
+## Evidence
+
+- Pattern in codeStyle.namingConventions.constants
+
+---
+id: jongmin-server-infra-instinct-import-style
+trigger: "When importing modules within the codebase"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: jongmine/jongmin-server-infra
+---
+
+# Jongmin Server Infra Instinct Import Style
+
+## Action
+
+Use relative import paths
+
+## Evidence
+
+- Pattern in codeStyle.importStyle
+
+---
+id: jongmin-server-infra-instinct-export-style
+trigger: "When exporting modules or functions"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: jongmine/jongmin-server-infra
+---
+
+# Jongmin Server Infra Instinct Export Style
+
+## Action
+
+Use named exports
+
+## Evidence
+
+- Pattern in codeStyle.exportStyle
+
+---
+id: jongmin-server-infra-instinct-test-location
+trigger: "When adding or updating tests"
+confidence: 0.7
+domain: testing
+source: repo-analysis
+source_repo: jongmine/jongmin-server-infra
+---
+
+# Jongmin Server Infra Instinct Test Location
+
+## Action
+
+Place test files in a separate directory, not mixed with source files
+
+## Evidence
+
+- Pattern in architecture.folderStructure.testLocation
+
+---
+id: jongmin-server-infra-instinct-git-commit-format
+trigger: "When writing a commit message"
+confidence: 0.9
+domain: git
+source: repo-analysis
+source_repo: jongmine/jongmin-server-infra
+---
+
+# Jongmin Server Infra Instinct Git Commit Format
+
+## Action
+
+Use conventional commit format: <type>: <short description> (e.g., fix: ...)
+
+## Evidence
+
+- Pattern in commits.type: conventional
+- Examples in commits.examples: 'fix: Docker 로그 회전 정책 추가', 'feat: Trace 병목 탐색 기능 구현'
+
+---
+id: jongmin-server-infra-instinct-git-commit-types
+trigger: "When choosing a commit type"
+confidence: 0.9
+domain: git
+source: repo-analysis
+source_repo: jongmine/jongmin-server-infra
+---
+
+# Jongmin Server Infra Instinct Git Commit Types
+
+## Action
+
+Use one of the following prefixes: fix, feat, chore
+
+## Evidence
+
+- Pattern in commits.prefixes: ['fix', 'feat', 'chore']
+- Seen in commits.examples
+
+---
+id: jongmin-server-infra-instinct-observability-dashboard-alert-update
+trigger: "When enhancing, fixing, or adding monitoring dashboards or alert rules"
+confidence: 0.95
+domain: workflow
+source: repo-analysis
+source_repo: jongmine/jongmin-server-infra
+---
+
+# Jongmin Server Infra Instinct Observability Dashboard Alert Update
+
+## Action
+
+Edit/add dashboard JSONs in roles/monitoring/files/dashboards/, update alert_rules_sallang.yml.j2, update grafana_dashboards.yml, and update related docs
+
+## Evidence
+
+- Workflow: observability-dashboard-and-alert-update
+- Commit sequences and files listed in workflow
+
+---
+id: jongmin-server-infra-instinct-observability-policy-metric-hardening
+trigger: "When improving or fixing observability pipeline configuration, metric collection, or monitoring policies"
+confidence: 0.9
+domain: workflow
+source: repo-analysis
+source_repo: jongmine/jongmin-server-infra
+---
+
+# Jongmin Server Infra Instinct Observability Policy Metric Hardening
+
+## Action
+
+Edit monitoring role defaults/templates, update docs/plans, and adjust dashboards/configs as needed
+
+## Evidence
+
+- Workflow: observability-policy-and-metric-hardening
+- Commit sequences and files listed in workflow
+
