@@ -42,10 +42,58 @@ metrics_generator:
   ring:
     kvstore:
       store: inmemory
+  processor:
+    service_graphs:
+      dimensions:
+        - deployment.environment
+        - http.method
+      enable_virtual_node_label: true
+    span_metrics:
+      dimensions:
+        - deployment.environment
+        - service.version
+        - http.method
+        - http.route
+        - http.status_code
+        - db.system
+        - db.name
+        - peer.service
+      intrinsic_dimensions:
+        service: true
+        span_name: true
+        span_kind: true
+        status_code: true
+        status_message: false
+      enable_target_info: true
+      target_info_excluded_dimensions:
+        - telemetry.sdk.name
+        - telemetry.sdk.language
+        - telemetry.sdk.version
+        - process.runtime.name
+        - process.runtime.version
+        - process.runtime.description
+    local_blocks:
+      filter_server_spans: false
+  registry:
+    collection_interval: 15s
+    stale_duration: 15m
+    external_labels:
+      cluster: homelab
+  traces_storage:
+    path: /var/lib/tempo/generator/traces
   storage:
     path: /var/lib/tempo/generator/wal
+    remote_write_add_org_id_header: false
+    remote_write:
+      - url: http://prometheus:{{ prometheus_port }}/api/v1/write
+        send_exemplars: true
+  metrics_ingestion_time_range_slack: 5m
 
 overrides:
   defaults:
     metrics_generator:
-      processors: []
+      processors:
+        - service-graphs
+        - span-metrics
+        - local-blocks
+      max_active_series: 100000

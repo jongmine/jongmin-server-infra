@@ -10,6 +10,7 @@
     - /etc/monitoring/grafana/data/dashboards
     - /etc/monitoring/grafana/data/dashboards/infrastructure
     - /etc/monitoring/grafana/data/dashboards/sallang
+    - /etc/monitoring/grafana/data/dashboards/debug
 
 - name: Deploy Infrastructure dashboards
   copy:
@@ -21,8 +22,13 @@
   with_items:
     - node-exporter-full.json
     - docker-container-host.json
-    - loki-dashboard.json
     - traefik-v3.json
+
+- name: Remove Logs / App dashboard from Infrastructure folder
+  file:
+    path: /etc/monitoring/grafana/data/dashboards/infrastructure/loki-dashboard.json
+    state: absent
+  notify: Restart Grafana
 
 - name: Deploy Sallang dashboards
   copy:
@@ -33,4 +39,17 @@
     mode: '0644'
   with_items:
     - apm-dashboard.json
+    - datastore-dashboard.json
+    - jvm-hikari-dashboard.json
+  notify: Restart Grafana
+
+- name: Deploy Debug dashboards
+  copy:
+    src: "dashboards/{{ item }}"
+    dest: "/etc/monitoring/grafana/data/dashboards/debug/{{ item }}"
+    owner: '472'
+    group: '472'
+    mode: '0644'
+  with_items:
+    - loki-dashboard.json
   notify: Restart Grafana

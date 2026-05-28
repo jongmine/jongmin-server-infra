@@ -20,6 +20,11 @@ prometheus_retention: "15d"
 loki_retention: "744h"
 tempo_retention: "168h"
 
+# Log ingestion safety
+# This is not Loki retention. It drops late/backfilled Docker log entries before
+# Loki ingestion so cursor drift cannot replay stale logs indefinitely.
+alloy_log_drop_older_than: "1h"
+
 # Internal Ports
 prometheus_port: 9090
 loki_port: 3100
@@ -33,12 +38,12 @@ node_exporter_port: 9100
 cadvisor_port: 8080
 
 # Resource Limits
-prometheus_memory_limit: "1g"
-prometheus_cpu_limit: "1.0"
+prometheus_memory_limit: "2g"
+prometheus_cpu_limit: "1.5"
 loki_memory_limit: "512m"
 loki_cpu_limit: "0.5"
-tempo_memory_limit: "512m"
-tempo_cpu_limit: "0.5"
+tempo_memory_limit: "1g"
+tempo_cpu_limit: "1.0"
 grafana_memory_limit: "512m"
 grafana_cpu_limit: "0.5"
 alloy_memory_limit: "256m"
