@@ -116,13 +116,13 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum(rate(pg_stat_database_xact_commit{container_name=~\"sallang-postgres-exporter.*\"}[$__rate_interval]))",
+          "expr": "sum(rate(pg_stat_database_xact_commit{container_name=~\"sallang-postgres-exporter.*\", datname=\"sallang\"}[$__rate_interval]))",
           "legendFormat": "commit",
           "refId": "A"
         },
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum(rate(pg_stat_database_xact_rollback{container_name=~\"sallang-postgres-exporter.*\"}[$__rate_interval]))",
+          "expr": "sum(rate(pg_stat_database_xact_rollback{container_name=~\"sallang-postgres-exporter.*\", datname=\"sallang\"}[$__rate_interval]))",
           "legendFormat": "rollback",
           "refId": "B"
         }
