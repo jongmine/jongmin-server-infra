@@ -551,7 +551,7 @@
           "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "topk(10, histogram_quantile(0.99, sum by (uri, le) (rate(http_server_requests_seconds_bucket{application=\"$application\", uri!=\"/**\"}[$__rate_interval]))))",
           "format": "table",
-          "instant": false,
+          "instant": true,
           "legendFormat": "{{uri}}",
           "refId": "A"
         }
@@ -582,7 +582,7 @@
           "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "topk(10, sum by (uri, status) (rate(http_server_requests_seconds_count{application=\"$application\", status=~\"4..|5..\"}[$__rate_interval])))",
           "format": "table",
-          "instant": false,
+          "instant": true,
           "legendFormat": "{{status}} {{uri}}",
           "refId": "A"
         }
@@ -613,7 +613,7 @@
           "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "topk(10, sum by (uri) (rate(http_server_requests_seconds_count{application=\"$application\"}[$__rate_interval])))",
           "format": "table",
-          "instant": false,
+          "instant": true,
           "legendFormat": "{{uri}}",
           "refId": "A"
         }
