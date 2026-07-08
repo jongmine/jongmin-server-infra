@@ -1,5 +1,5 @@
 ---
-- name: "jongmin-server 인프라 구성 적용"
+- name: "Jongmin Server 인프라 구성 적용"
   hosts: homeserver
   become: true
   roles:
