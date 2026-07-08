@@ -1,0 +1,28 @@
+---
+profile: moderate
+
+exclude_paths:
+  - .ansible/
+  - .omc/
+  - .omx/
+  - docs/
+
+skip_list:
+  # 기존 role 전반에서 짧은 module 이름을 사용한다.
+  # 모든 task를 FQCN으로 바꾸는 작업은 기계적이지만 범위가 넓으므로 별도 lint cleanup 이슈로 분리한다.
+  - fqcn[action]
+  - fqcn[action-core]
+
+  # 기존 Docker task는 Ansible에서 허용되는 yes/no 표기를 많이 사용한다.
+  # 관련 없는 diff가 커지지 않도록 boolean 정규화는 별도 cleanup에서 처리한다.
+  - yaml[truthy]
+
+  # 일부 command task는 현재 동작에 의존하므로 changed_when 추가 전에 idempotency 검토가 필요하다.
+  - no-changed-when
+
+  # 기존 set_fact 이름은 role 내부 task 동작에 연결되어 있다.
+  # template/task 참조를 별도 cleanup에서 확인한 뒤 이름을 바꾼다.
+  - var-naming[no-role-prefix]
+
+  # CI bootstrap diff를 작고 동작 중립적으로 유지하기 위해 formatting 전용 cleanup은 의도적으로 뒤로 미룬다.
+  - yaml[new-line-at-end-of-file]
