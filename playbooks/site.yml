@@ -1,5 +1,6 @@
 ---
-- hosts: homeserver
+- name: "Jongmin Server 인프라 구성 적용"
+  hosts: homeserver
   become: true
   roles:
     - common
