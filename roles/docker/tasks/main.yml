@@ -86,7 +86,7 @@
     state: started
     enabled: yes
 
-- name: Create {{ docker_network_name }} network
+- name: "Docker network 생성 {{ docker_network_name }}"
   docker_network:
     name: "{{ docker_network_name }}"
     driver: bridge
