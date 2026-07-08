@@ -1,14 +1,14 @@
 ---
-- name: update grub
+- name: "GRUB 설정 갱신"
   command: update-grub
-  notify: reboot required
+  notify: "재부팅 필요 안내"
 
-- name: restart cpu boost service
+- name: "CPU boost 서비스 재시작"
   systemd:
     name: "{{ cpu_boost_service_name }}.service"
     state: restarted
     daemon_reload: yes
 
-- name: reboot required
+- name: "재부팅 필요 안내"
   debug:
     msg: "GRUB configuration changed. Reboot required to apply kernel parameters."
