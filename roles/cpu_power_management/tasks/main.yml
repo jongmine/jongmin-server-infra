@@ -7,7 +7,7 @@
     regexp: "^GRUB_CMDLINE_LINUX_DEFAULT="
     line: 'GRUB_CMDLINE_LINUX_DEFAULT="{{ grub_cmdline_linux_default }}"'
     backup: yes
-  notify: update grub
+  notify: "GRUB 설정 갱신"
 
 - name: Deploy CPU boost control systemd service
   template:
@@ -16,7 +16,7 @@
     owner: root
     group: root
     mode: "0644"
-  notify: restart cpu boost service
+  notify: "CPU boost 서비스 재시작"
 
 - name: Enable and start CPU boost control service
   systemd:
