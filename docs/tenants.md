@@ -40,7 +40,7 @@
 |---|---|
 | `privileged`, 위험한 `cap_add` | 필요한 이유를 알려 주면 대안을 같이 찾는다 |
 | `network_mode: host`, `pid: host` | 배정된 네트워크와 포트 대역 |
-| Docker 소켓 마운트 | 허용하지 않음 |
+| Docker 소켓 마운트(소켓이 든 `/var/run` 같은 상위 폴더 포함) | 허용하지 않음(예외 없음) |
 | 스택 폴더 밖 경로 마운트 | named volume |
 | 대역 밖 포트 | 대역 안 포트. 모자라면 대역을 늘린다(예외 없음) |
 | 자원 상한 없는 서비스 | `deploy.resources.limits` 또는 `mem_limit` |
