@@ -21,7 +21,9 @@
 
 - gibson이 죽어도 직전까지의 지표와 로그가 fender에 남는다.
 - 입주팀은 Keycloak 그룹에 따라 자기 프로젝트 폴더의 대시보드만 본다.
-- 비용: fender 한 대에 관측이 모여 있어 fender가 죽으면 관측이 없다. 외부 점검이 이를 알린다.
+- 비용: fender 한 대에 관측이 모여 있어 fender가 죽으면 관측도 알림도 없다.
+  marshall의 blackbox exporter는 측정만 하고 알림 판단은 fender의 Prometheus가 하기 때문이다.
+  이 제약은 받아들인다([0011](0011-failure-blast-radius.md)).
 - N100 SSD는 발열에 약하다. 디스크 온도 알림을 반드시 둔다.
 
 ## 검토한 대안
