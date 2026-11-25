@@ -34,6 +34,7 @@ tailscale/    접근 규칙(ACL), 태그
 ## 검증
 
 ```bash
+terraform -chdir=<영역> init          # 새 체크아웃에서 한 번. validate만 할 때는 -backend=false
 terraform -chdir=<영역> fmt -check
 terraform -chdir=<영역> validate
 terraform -chdir=<영역> plan        # 결과를 사용자에게 보여 주고 승인받은 뒤 apply

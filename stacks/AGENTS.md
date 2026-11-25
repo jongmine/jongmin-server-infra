@@ -17,7 +17,9 @@ common/<스택>/                  모든 서버에 띄우는 것 (예: 수집 �
 ## 작성 규칙
 
 - 이미지 태그는 버전까지 고정한다. `latest` 금지. 올리는 것은 Renovate PR로.
-- 비밀값은 `[[KEY]]`로 참조한다(Komodo가 서버의 Periphery 설정에서 채운다). 파일에 값을 쓰지 않는다.
+- 비밀값은 compose에서 `${KEY}`로 읽는다. Komodo 스택의 Environment에 `KEY=[[KEY]]`를 두면
+  Komodo가 서버의 Periphery 설정에서 값을 채워 `.env`로 넘긴다. compose 파일에 `[[KEY]]`를 직접 쓰지
+  않는다(치환되지 않고 문자열 그대로 들어갈 수 있다). 파일에 값을 쓰지 않는다.
 - 모든 서비스에 `restart`, `healthcheck`, 메모리 상한을 둔다.
 - 포트를 공개할 때는 필요한 것만. 서버 간 통신에 쓰는 포트는 Tailscale 인터페이스로만 받는다
   (호스트 방화벽이 강제하지만 compose에서도 의도를 드러낸다).
@@ -33,4 +35,5 @@ promtool check rules <규칙 파일> && promtool test rules <시험 파일>   # 
 ```
 
 배포는 Komodo UI의 Deploy 버튼. 배포 뒤 명세의 완료 조건을 실행한다.
-설정 파일만 바꾼 경우 컨테이너가 다시 뜨는지 확인한다(마운트된 파일 변경은 자동 반영되지 않는다).
+마운트된 설정 파일만 바꾸면 compose와 이미지가 같아 Deploy로는 컨테이너가 다시 만들어지지 않는다.
+그 서비스를 Komodo에서 재시작하거나(reload를 지원하면 reload) 다시 만든 뒤, 새 설정이 적용됐는지 확인한다.

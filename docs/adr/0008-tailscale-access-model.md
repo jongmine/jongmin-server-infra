@@ -13,12 +13,13 @@
 - **태그는 서버 이름**으로 붙인다: `tag:marshall`, `tag:gibson`, `tag:fender`.
 - **기본은 차단.** 허용 규칙은 `서버:포트` 단위로 쓰고 Terraform으로 관리한다.
 - **프로젝트마다 포트 대역**을 배정한다([0009](0009-tenant-isolation-and-predeploy-check.md)).
-  팀원에게는 자기 프로젝트 대역만 연다.
+  팀원에게는 자기 프로젝트 대역과, fender의 Grafana·Komodo 화면 포트만 연다.
 - 팀원은 tailnet 사용자로 초대하지 않고 **기기 공유**로 받는다. 규칙에서는 이메일로 지정한다.
 - **Tailscale SSH는 쓰지 않는다.** OpenSSH와 기기별 키를 유지한다.
   Tailscale 계정이 침해되어도 서버 셸까지 한 번에 열리지 않게 하기 위해서다.
 - Docker가 공개한 포트는 호스트의 `DOCKER-USER` 체인에서 `tailscale0` 인터페이스로만 받는다.
   (Docker는 ufw를 우회하므로 ufw 규칙만으로는 막히지 않는다.)
+  예외는 marshall의 80/443 하나다. 인터넷에서 받아야 하므로 공개 인터페이스에서도 허용한다.
 
 비상 경로: marshall은 OCI 콘솔, 집 서버는 내부망 SSH 또는 모니터·키보드.
 marshall의 SSH 포트는 평소 인터넷에 열지 않는다.

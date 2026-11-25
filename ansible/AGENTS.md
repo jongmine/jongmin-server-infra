@@ -39,6 +39,7 @@ verify/<명세번호>.yml                  완료 조건 검사
 ## 검증
 
 ```bash
+# ansible/ 안에서 실행한다. 아래 경로는 명세 1-01이 끝난 뒤부터 있다. 루트에서 실행하면 옛 구조가 대상이 된다.
 ansible-lint
 ansible-playbook playbooks/site.yml --check --diff [--limit <서버>]
 ansible-playbook verify/<명세번호>.yml

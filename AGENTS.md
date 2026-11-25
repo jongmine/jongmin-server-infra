@@ -75,9 +75,10 @@ Ansible로 컨테이너를 띄우지 않는다(예외: Komodo Core 하나).
 ```bash
 ansible-lint                                   # 옛 구조 + 새 구조
 ansible-playbook playbooks/site.yml --check --diff          # 옛 구조
-cd ansible && ansible-playbook playbooks/site.yml --check --diff   # 새 구조
-cd ansible && ansible-playbook verify/<명세번호>.yml          # 완료 조건
+(cd ansible && ansible-playbook playbooks/site.yml --check --diff)  # 새 구조 (명세 1-01 이후)
+(cd ansible && ansible-playbook verify/<명세번호>.yml)         # 완료 조건
 docker compose -f stacks/<서버>/<스택>/compose.yaml config -q
+terraform -chdir=terraform/<영역> init -backend=false   # 새 체크아웃에서 한 번
 terraform -chdir=terraform/<영역> fmt -check && terraform -chdir=terraform/<영역> validate
 ```
 

@@ -14,8 +14,11 @@
 흐름:
 
 ```
-vault 파일 ──Ansible──▶ 서버별 Komodo Periphery 설정의 [secrets] ──▶ compose에서 [[KEY]]로 참조
+vault 파일 ──Ansible──▶ 서버별 Komodo Periphery 설정의 [secrets]
+          ──▶ 스택 Environment의 KEY=[[KEY]] ──▶ compose에서 ${KEY}
 ```
+
+compose 파일 안의 `[[KEY]]`가 치환되는지는 확인하지 못했다. Environment를 거치는 쪽이 문서화된 경로다.
 
 - vault 변수는 `vault_` 접두사를 붙이고, 평문 변수 파일에서 `변수: "{{ vault_변수 }}"`로 받는다.
   (어떤 변수가 있는지는 평문 파일에서 검색되고, 값만 암호화된다.)

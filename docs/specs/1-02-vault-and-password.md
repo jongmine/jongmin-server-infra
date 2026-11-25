@@ -43,7 +43,8 @@ vault 파일을 다시 잃어버리지 않도록 보관 위치를 정한다.
    (`vault_canary`는 의미 없는 시험용 값)
 5. `gitleaks detect --no-git --source ansible/` 가 발견 0건.
 6. 선택한 보관 위치에 따라:
-   - 커밋하는 경우: `git check-ignore ansible/inventory/group_vars/all/vault.yml` 이 종료 코드 1.
+   - 커밋하는 경우: `git ls-files --error-unmatch ansible/inventory/group_vars/all/vault.yml` 이
+     종료 코드 0(추적 중)이고, `git check-ignore` 는 같은 파일에 종료 코드 1.
    - 커밋하지 않는 경우: 같은 명령이 종료 코드 0이고, 백업 위치와 복원 절차가 `ansible/README.md`에 있다.
 
 Red 확인: 구현 전에는 1~4가 "파일 없음"으로 실패한다.
